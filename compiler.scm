@@ -1,6 +1,14 @@
 
 (load "pc.scm")
 
+;digit
+(define <digit-0-9>
+  (range #\0 #\9))
+
+;digit without 0
+(define <digit-1-9>
+  (range #\1 #\9))
+
 ;natural number
 (define <nat>
   (new (*parser (char #\0))
@@ -12,7 +20,7 @@
        (*pack-with
  (lambda (a s)
    (string->number
-    (list->stringtug
+    (list->string
      `(,a ,@s)))))
 
        (*disj 2)
