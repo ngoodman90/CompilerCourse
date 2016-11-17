@@ -162,3 +162,19 @@
    (list->string chars)))
 
        done))
+
+;boolean
+(define <boolean>
+  (new (*parser (char #\#))
+       
+       (*parser (char #\t))
+       (*parser (char #\f))
+       (*disj 2)
+       
+       (*caten 2)
+       (*pack-with
+	(lambda (ht pred)
+	 (list->string
+	 '(,ht ,@pred))))
+	done))
+       
