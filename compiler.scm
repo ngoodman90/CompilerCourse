@@ -1,6 +1,23 @@
 
 (load "pc.scm")
 
+(define <Sexpr>
+  (new (*parser <Boolean>)
+       (*parser <Char>)
+       (*parser <Number>)
+       (*parser <String>)
+       (*parser <Symbol>)
+       (*parser <ProperList>)
+       (*parser <ImproperList>)
+       (*parser <Vector>)
+       (*parser <Quoted>)
+       (*parser <QuasiQuoted>)
+       (*parser <Unquoted>)
+       (*parser <UnquoteAndSpliced>)
+       (*parser <InfixExtension>)
+       (disj 13)
+  done))
+
 ;digit
 (define <digit-0-9>
   (range #\0 #\9))
@@ -8,6 +25,12 @@
 ;digit without 0
 (define <digit-1-9>
   (range #\1 #\9))
+  
+(define <a-z>
+  (range #\a #\z))
+  
+(define <A-Z>
+  (range #\A #\Z))
 
 ;natural number
 (define <Natural>
@@ -119,6 +142,14 @@
        (*pack-with (lambda (_< ch _>) ch))
        done))
        
+(define <HexUnicodeChar>
+  (new (*parser (word-ci "x "))
+       (*parser <HexChar>)
+       (*parser <HexChar>) *star
+       (caten 3)
+       ;TODO add pack with if needed
+  done))
+       
 (define <StringHexChar>
   (new (*parser (word-ci "\\x"))
        (*parser <HexChar>) *star
@@ -167,8 +198,87 @@
   (new (*paser <StringChar>)
        (*paser <StringChar>) *star
        (*caten 2)
-       done))
+  done))
+  
+(define <SymbolChar>
+  (new (*parser <digit-0-9>)
+       (*parser <a-z>)
+       (*parser <A-Z>)
+       (*parser (char "#\!"))
+       (*parser (char "#\$"))
+       (*parser (char "#\^"))
+       (*parser (char "#\*"))
+       (*parser (char "#\-"))
+       (*parser (char "#\_"))
+       (*parser (char "#\="))
+       (*parser (char "#\+"))
+       (*parser (char "#\<"))
+       (*parser (char "#\>"))
+       (*parser (char "#\?"))
+       (*parser (char "#\/"))
+       (disj 15)
+  done))
+  
+(define <ProperList>
+  (new (*parser (char "#\("))
+       (*parser <Sexpr>)
+       (*parser (char "#\)"))
+       (caten 3)
+  done))
+  
+(define <ImproperList>
+  (new (*parser (char "#\("))
+       (*parser <Sexpr>)
+       (*parser <Sexpr>) *star
+       (*parser (char "#\."))
+       (*parser <Sexpr>)
+       (*parser (char "#\)"))
+       (caten 6)
+  done))
+  
+(define <Vector>
+  (new (*parser (word-ci "#("))
+       (*parser <Sexpr>) *star
+       (*parser (char "#\)"))
+       (caten 3)
+  done))
+  
+(define <Quoted>
+  (new (*parser (char "#\'"))
+       (*parser <Sexpr>)
+       (caten 2)
+  done))
 
+(define <QuasiQuoted>
+  (new (*parser (char "#\`"))
+       (*parser <Sexpr>)
+       (caten 2)
+  done))
+  
+(define <Unquoted>
+  (new (*parser (char "#\,"))
+       (*parser <Sexpr>)
+       (caten 2)
+  done))
+  
+(define UnquoteAndSpliced
+  (new (*parser (word-ci ",@"))
+       (*parser <Sexpr>)
+       (caten 2)
+  done))
+  
+(define <InfixExtension>
+  (new (*parser <InfixPrefixExtensionPrefix>)
+       (*parser <InfixExpression>)
+       (caten 2)
+  done))
+  
+(define <InfixPrefixExtensionPrefix>
+  (new (*parser (word-ci "##"))
+       (*parser (word-ci "#%"))
+       (disj 2)
+  done))
+  
 ;string
 (define <String>
   (new (*parser (char #\"))
@@ -195,7 +305,40 @@
 	(lambda (ht pred)
 	 (list->string
 	 '(,ht ,@pred))))
-	done))
+  done))
+
+(define <CharPrefix>
+  (new (*parser (word-ci "#\\"))
+  done))
+
+(define <VisibleSimpleChar>
+  (new (*parser );TODO any char
+       (*guard (lambda (n) (not (> n " "))))
+  done))
+  
+(define <NamedChar>
+  (new (*parser (word-ci "lambda"))
+       (*parser (word-ci "\\n"))
+       (*parser (word-ci "nul")) ;TODO change to the correct sign
+       (*parser (word-ci "page"))
+       (*parser (word-ci "return"))
+       (*parser (char "#\ "))
+       (*parser (word-ci "\\t"))
+       (disj 7)
+  done))
+
+(define <StringLiteralChar>
+  (new (*parser ) ;TODO any char
+       (*guard (lambda (n) (not (= "\\" n))))
+  done))
+
+(define <Char>
+  (new (*parser <CharPrefix>)
+       (*parser <VisibleSimpleChar>)
+       (*parser <NamedChar>)
+       (*parser <HexUnicodeChar>)
+       (disj 4)
+  done))
        
 ;InfixPrefixExtensionPrefix
 (define <InfixPrefixExtensionPrefix>
@@ -220,10 +363,7 @@
        (*parser (char #\^))
        
        (*disj 2)
-       (*pack-with
-	(lambda (...)))
-	
-	done))
+  done))
 
 (define <InfixAdd>
   (new (*parser <Number>)
@@ -313,5 +453,41 @@
        
        (*disj 12)
   done))
- 
- 
+
+(define <InfixArrayGet>
+  (new (*parser <InfixExpression>)
+       (*parser (char "#\["))
+       (*parser <InfixExpression>)
+       (*parser (char "#\]"))
+       (caten 4)
+  done))
+  
+(define <InfixFuncall>
+  (new (*parser <InfixExpression>)
+       (*parser (char "#\("))
+       (*parser <InfixArgList>)
+       (*parser (char "#\)"))
+       (caten 4)
+  done))
+
+(define <InfixArgList>
+  (new (*parser <InfixExpression>)
+       (*parser (word-ci "(,"))
+       (*parser <InfixExpression>)
+       (*parser (char "#\)")) *star ;TODO check where the star should be: ⟨InfixArgList⟩::=⟨InfixExpression⟩ (, ⟨InfixExpression⟩) ∗ | ε
+       ; How do we check for EPSILON ?
+       (caten 4)
+  done))
+  
+(define <InfixParen>
+  (new (*parser (char "#\("))
+       (*parser <InfixExpression>)
+       (*parser (char "#\("))
+       (caten 3)
+  done))
+  
+(define <InfixSexprEscape>
+  (new (*parser <InfixPrefixExtensionPrefix>)
+       (*parser <Sexpr>)
+       (caten 2)
+  done))
