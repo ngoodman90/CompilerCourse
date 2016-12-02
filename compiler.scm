@@ -25,16 +25,8 @@
 (define <Boolean>
   (new (*parser (^<MetaChar> "#t" #t))
        (*parser (^<MetaChar> "#f" #f))
-       
-;;        (*parser (char #\t))
-;;        (*parser (char #\f))
+
        (*disj 2)
-       
-;;        (*caten 2)
-;;        (*pack-with
-;; 	(lambda (ht pred)
-;; 	 (list->string
-;; 	 '(,ht ,@pred))))
   done))
   
 ; ##################################### Char #####################################
@@ -232,8 +224,9 @@
 
 (define <Symbol>
   (new (*parser <SymbolChar>) *plus
+;; 	(*pack (lambda (n) n))
 ;;        (*pack-with
-;; 	(lambda (n) (list->string n)))
+;; 	(lambda (n) n))
   done))
 
 ; ##################################### InfixExtension #####################################
@@ -269,17 +262,15 @@
 
 (define power
   (lambda (num pow)
-     (if (= pow 1)
-      num
-      (* num (power num (- pow 1))))))
+     `(^ ,num ,pow)))
 
 (define power-list
   (lambda (lst)
     (let ((head (car lst))
 	 (tail (cdr lst)))
       (if (not (null? (cdr tail)))
-	(power (power-list tail) head)
-	(power (car tail) head)))))
+	(power head (power-list tail))
+	(power head (car tail))))))
 
 ; Power
 (define <InfixPowerList>
@@ -294,7 +285,7 @@
        (*caten 2)
        (*pack-with
 	(lambda (a b)
-	  (power-list (list* b (reverse a)))))
+	  (power-list (reverse (list* b (reverse a))))))
 	  
        (*parser <Number>)
        (*disj 2)
@@ -305,16 +296,18 @@
   (new (*parser <InfixPowerList>)
        
        (*parser (char #\*))
-	(*pack (lambda (a) *))
+	(*pack (lambda (a) 1))
        (*parser (char #\/))
-	(*pack (lambda (a) /))
+	(*pack (lambda (a) 2))
        (*disj 2)
        
        (*delayed (lambda () <InfixMulOrDiv>))
        (*caten 3)
        (*pack-with
 	(lambda (num action expression)
-	  (action num expression)))
+	  (if (= action 1)
+	    `(* ,num ,expression)
+	    `(/ ,num ,expression))))
 	  
        (*parser <InfixPowerList>)
        (*disj 2)
@@ -325,16 +318,18 @@
   (new (*parser <InfixMulOrDiv>)
        
        (*parser (char #\+))
-	(*pack (lambda (a) +))
+	(*pack (lambda (a) 1))
        (*parser (char #\-))
-	(*pack (lambda (a) -))
+	(*pack (lambda (a) 2))
        (*disj 2)
        
        (*delayed (lambda () <InfixAddOrSub>))
        (*caten 3)
        (*pack-with
 	(lambda (num action expression)
-	  (action num expression)))
+	  (if (= action 1)
+	    `(+ ,num ,expression)
+	    `(- ,num ,expression))))
 	  
        (*parser <InfixMulOrDiv>)
        (*disj 2)
@@ -342,15 +337,17 @@
   
 (define <InfixNeg>
   (new (*parser (char #\-))
+;; 	(*pack (lambda (a) -))
        (*delayed (lambda () <InfixExpression>))
        (*caten 2)
        (*pack-with
 	(lambda (neg num)
-	  (- num)))
+	  `(- ,num)))
   done))
   
 (define <InfixExpression>
-  (new (*parser <InfixAddOrSub>)
+  (new 
+       (*parser <InfixAddOrSub>)
        (*parser <InfixNeg>)
 ;;        (*parser <InfixArrayGet>)
 ;;        (*parser <InfixFuncall>)
@@ -369,34 +366,7 @@
        (*pack-with
 	(lambda (prefix e) e))
   done))
-
-;; ;;        
-
-;; ;; 	
-;; ;;        
-;; ;; (define <InfixMul>
-;; ;;   (new (*parser <Number>)
-;; ;;        (*parser (char #\*))
-;; ;;        (*parser <InfixExpression>)
-;; ;;        (*pack-with
-;; ;; 	(lambda (num mul expression)
-;; ;; 	  (* num expression)))
-;; ;;   done))
-;; ;; 	
-;; ;; (define <InfixDiv>
-;; ;;   (new (*parser <Number>)
-;; ;;        (*parser (char #\/))
-;; ;;        (*parser <InfixExpression>)
-;; ;;        (*guard (lambda (n) (not (zero? n))))
-;; ;;        (*pack-with
-;; ;; 	(lambda (num div expression)
-;; ;; 	  (/ num expression)))
-;; ;;   done))
-;; ;;        
-
-;; ;;        
-;; ;; 	
-;; 
+ 
 ;; ;; (define <InfixArrayGet>
 ;; ;;   (new (*parser <InfixExpression>)
 ;; ;;        (*parser (char #\[))
@@ -418,7 +388,7 @@
 ;; ;;        (*parser (word-ci "(,"))
 ;; ;;        (*parser <InfixExpression>)
 ;; ;;        (*parser (char #\))) *star ;TODO check where the star should be: ⟨InfixArgList⟩::=⟨InfixExpression⟩ (, ⟨InfixExpression⟩) ∗ | ε
-;; ;;        ; How do we check for EPSILON ?
+;; ;;        (*parser <epsilon>)
 ;; ;;        (*caten 4)
 ;; ;;   done))
 ;; ;;   
@@ -435,8 +405,6 @@
 ;; ;;        (*caten 2)
 ;; ;;   done))
 
-
-
 ; ##################################### Sexpr #####################################
 
 (define <Sexpr>
@@ -444,80 +412,91 @@
        (*parser <Char>)
        (*parser <Number>)
        (*parser <String>)
-;; 	(*pack
-;; 	  (lambda (n) (list->string n)))
        (*parser <Symbol>)
-;;        (*parser <ProperList>)
-;;        (*parser <ImproperList>)
-;;        (*parser <Vector>)
-;;        (*parser <Quoted>)
-;;        (*parser <QuasiQuoted>)
-;;        (*parser <Unquoted>)
-;;        (*parser <UnquoteAndSpliced>)
-;;        (*parser <InfixExtension>)
-       (*disj 5)
-;;        (*pack-with
-;; 	(lambda (n) (list->string n)))
+       (*delayed (lambda () <ProperList>))
+       (*delayed (lambda () <ImproperList>))
+       (*delayed (lambda () <Vector>))
+       (*delayed (lambda () <Quoted>))
+       (*delayed (lambda () <QuasiQuoted>))
+       (*delayed (lambda () <Unquoted>))
+       (*delayed (lambda () <UnquotedAndSpliced>))
+       (*parser <InfixExtension>)
+       (*disj 13)
   done))
   
 ; ##################################### ProperList #####################################
 
-;; ;; (define <ProperList>
-;; ;;   (new (*parser (char #\())
-;; ;;        (*parser <Sexpr>)
-;; ;;        (*parser (char #\)))
-;; ;;        (*caten 3)
-;; ;;   done))
+(define <ProperList>
+  (new (*parser (char #\())
+       (*parser <Sexpr>)
+       (*parser (char #\)))
+       (*caten 3)
+       (*pack-with
+	(lambda (a s b)
+	  `(,s)))
+  done))
 
 ; ##################################### ImproperList #####################################
 
-;; ;; (define <ImproperList>
-;; ;;   (new (*parser (char #\())
-;; ;;        (*parser <Sexpr>)
-;; ;;        (*parser <Sexpr>) *star
-;; ;;        (*parser (char #\.))
-;; ;;        (*parser <Sexpr>)
-;; ;;        (*parser (char #\)))
-;; ;;        (*caten 6)
-;; ;;   done))
+(define <ImproperList>
+  (new (*parser (char #\())
+       (*parser <Sexpr>)
+       (*parser <Sexpr>) *star
+       (*parser (char #\.))
+       (*parser <Sexpr>)
+       (*parser (char #\)))
+       (*caten 6)
+  done))
 
 ; ##################################### Vector #####################################
 
-;; ;; (define <Vector>
-;; ;;   (new (*parser (word-ci "#("))
-;; ;;        (*parser <Sexpr>) *star
-;; ;;        (*parser (char #\)))
-;; ;;        (*caten 3)
-;; ;;   done))
+(define <Vector>
+  (new (*parser (word-ci "#("))
+       (*parser <Sexpr>) *star
+       (*parser (char #\)))
+       (*caten 3)
+  done))
 
 ; ##################################### Quoted #####################################
 
-;; ;; (define <Quoted>
-;; ;;   (new (*parser (char #\'))
-;; ;;        (*parser <Sexpr>)
-;; ;;        (*caten 2)
-;; ;;   done))
+(define <Quoted>
+  (new (*parser (char #\'))
+       (*parser <Sexpr>)
+       (*caten 2)
+       (*pack-with
+	(lambda (tag e)
+	  `(,tag ,e)))
+  done))
 
 ; ##################################### QuasiQuoted #####################################
 
-;; ;; (define <QuasiQuoted>
-;; ;;   (new (*parser (char #\`))
-;; ;;        (*parser <Sexpr>)
-;; ;;        (*caten 2)
-;; ;;   done))
+(define <QuasiQuoted>
+  (new (*parser (char #\`))
+       (*parser <Sexpr>)
+       (*caten 2)
+       (*pack-with
+	(lambda (tag e)
+	  `(,tag ,e)))
+  done))
 
 ; ##################################### Unquoted #####################################
 
-;; ;; (define <Unquoted>
-;; ;;   (new (*parser (char #\,))
-;; ;;        (*parser <Sexpr>)
-;; ;;        (*caten 2)
-;; ;;   done))
+(define <Unquoted>
+  (new (*parser (char #\,))
+       (*parser <Sexpr>)
+       (*caten 2)
+       (*pack-with
+	(lambda (tag e)
+	  `(,tag ,e)))
+  done))
 
 ; ##################################### UnquoteAndSpliced #####################################
 
-;; ;; (define UnquoteAndSpliced
-;; ;;   (new (*parser (word-ci ",@"))
-;; ;;        (*parser <Sexpr>)
-;; ;;        (*caten 2)
-;; ;;   done))
+(define <UnquotedAndSpliced>
+  (new (*parser (word-ci ",@"))
+       (*parser <Sexpr>)
+       (*caten 2)
+       (*pack-with
+	(lambda (tag e)
+	  `(,(list->string tag) ,e)))
+  done))
