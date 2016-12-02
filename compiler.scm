@@ -238,61 +238,141 @@
 
 ; ##################################### InfixExtension #####################################
 
-;; ;; (define <InfixPrefixExtensionPrefix>
-;; ;;   (new (*parser (word-ci "##"))
-;; ;;        (*parser (word-ci "#%"))
-;; ;;        (*disj 2)
-;; ;;   done))
-;;   
-;; ;; (define <InfixExtension>
-;; ;;   (new (*parser <InfixPrefixExtensionPrefix>)
-;; ;;        (*parser <InfixExpression>)
-;; ;;        (*caten 2)
-;; ;;   done))
-;;   
-
-
-;; ;; 	
-;PowerSymbol
-(define <PowerSymbol>
-  (new (*parser (char #\*))
-       (*parser (char #\*))
-       (*caten 2)
-       
-       (*parser (char #\^))
+(define <InfixPrefixExtensionPrefix>
+  (new (*parser (word-ci "##"))
+       (*parser (word-ci "#%"))
        
        (*disj 2)
   done))
 
-;; (define <InfixAdd>
-;;   (new (*parser <Number>)
-;;        (*parser (char #\+))
-;; ;;        (*parser <InfixExpression>)
-;;        (*parser <InfixAdd>)
-;;        (*caten 3)
-;;        (*pack-with
-;; 	(lambda (num add expression)
-;; 	  (+ num expression)))
-;;   done))
+(define <PowerSymbol>
+  (new (*parser (^<MetaChar> "**" #\^))
+       (*parser (char #\^))
+       
+       (*disj 2)
+  done))
+  
+(define <action-symbol>
+  (new (*parser (char #\+))
+       (*parser (char #\-))
+       (*parser <PowerSymbol>)
+       (*parser (char #\*))
+       (*parser (char #\/))
+       (*disj 5)
+  done))
+       
+(define <InfixSymbol>
+  (new (*parser <Symbol>)
+       (*parser <action-symbol>)
+       *diff
+  done))
+
+(define power
+  (lambda (num pow)
+     (if (= pow 1)
+      num
+      (* num (power num (- pow 1))))))
+
+(define power-list
+  (lambda (lst)
+    (let ((head (car lst))
+	 (tail (cdr lst)))
+      (if (not (null? (cdr tail)))
+	(power (power-list tail) head)
+	(power (car tail) head)))))
+
+; Power
+(define <InfixPowerList>
+  (new (*parser <Number>)
+       (*parser <PowerSymbol>)
+       (*caten 2)
+       (*pack-with
+	(lambda (n _^) n)) *plus
+       
+       
+       (*parser <Number>)
+       (*caten 2)
+       (*pack-with
+	(lambda (a b)
+	  (power-list (list* b (reverse a)))))
+	  
+       (*parser <Number>)
+       (*disj 2)
+  done))
+
+; Multiplication & Division
+(define <InfixMulOrDiv>
+  (new (*parser <InfixPowerList>)
+       
+       (*parser (char #\*))
+	(*pack (lambda (a) *))
+       (*parser (char #\/))
+	(*pack (lambda (a) /))
+       (*disj 2)
+       
+       (*delayed (lambda () <InfixMulOrDiv>))
+       (*caten 3)
+       (*pack-with
+	(lambda (num action expression)
+	  (action num expression)))
+	  
+       (*parser <InfixPowerList>)
+       (*disj 2)
+  done))
+
+; Addition & Subtraction
+(define <InfixAddOrSub>
+  (new (*parser <InfixMulOrDiv>)
+       
+       (*parser (char #\+))
+	(*pack (lambda (a) +))
+       (*parser (char #\-))
+	(*pack (lambda (a) -))
+       (*disj 2)
+       
+       (*delayed (lambda () <InfixAddOrSub>))
+       (*caten 3)
+       (*pack-with
+	(lambda (num action expression)
+	  (action num expression)))
+	  
+       (*parser <InfixMulOrDiv>)
+       (*disj 2)
+  done))
+  
+(define <InfixNeg>
+  (new (*parser (char #\-))
+       (*delayed (lambda () <InfixExpression>))
+       (*caten 2)
+       (*pack-with
+	(lambda (neg num)
+	  (- num)))
+  done))
+  
+(define <InfixExpression>
+  (new (*parser <InfixAddOrSub>)
+       (*parser <InfixNeg>)
+;;        (*parser <InfixArrayGet>)
+;;        (*parser <InfixFuncall>)
+;;        (*parser <InfixParen>)
+;;        (*parser <InfixSexprEscape>)
+       (*parser <Number>)
+       (*parser <InfixSymbol>)
+       
+        (*disj 4)
+  done))
+  
+(define <InfixExtension>
+  (new (*parser <InfixPrefixExtensionPrefix>)
+       (*parser <InfixExpression>)
+       (*caten 2)
+       (*pack-with
+	(lambda (prefix e) e))
+  done))
+
 ;; ;;        
-;; ;; (define <InfixNeg>
-;; ;;   (new (*parser (char #\-))
-;; ;;        (*parser <InfixExpression>)
-;; ;;        (*caten 2)
-;; ;;        (*pack-with
-;; ;; 	(lambda (neg num)
-;; ;; 	  (- num)))
-;; ;;   done))
+
 ;; ;; 	
-;; ;; (define <InfixSub>
-;; ;;   (new (*parser <Number>)
-;; ;;        (*parser (char #\-))
-;; ;;        (*parser <InfixExpression>)
-;; ;;        (*caten 3)
-;; ;;        (*pack-with
-;; ;; 	(lambda (num sub expression)
-;; ;; 	  (- num expression)))
-;; ;;   done))
 ;; ;;        
 ;; ;; (define <InfixMul>
 ;; ;;   (new (*parser <Number>)
@@ -313,46 +393,9 @@
 ;; ;; 	  (/ num expression)))
 ;; ;;   done))
 ;; ;;        
-;; ;; (define <InfixPow>
-;; ;;   (new (*parser <Number>)
-;; ;;        (*parser <PowerSymbol>)
-;; ;;        (*parser <InfixExpression>)
-;; ;;        (*pack-with
-;; ;; 	(lambda (num pow expression)
-;; ;; 	  (^ num expression)))
-;; ;;   done))
+
 ;; ;;        
-;; ;; (define <action-symbol>
-;; ;;   (new (*parser (char #\+))
-;; ;;        (*parser (char #\-))
-;; ;;        (*parser (char #\*))
-;; ;;        (*parser <PowerSymbol>)
-;; ;;        (*parser (char #\/))
-;; ;;        (*disj 5)
-;; ;;   done))
-;; ;;        
-;; ;; (define <InfixSymbol>
-;; ;;   (new (*parser <Symbol>)
-;; ;;        (*parser <action-symbol>)
-;; ;;        *diff
-;; ;;   done))
 ;; ;; 	
-;; ;; (define <InfixExpression>
-;; ;;   (new (*parser <InfixAdd>)
-;; ;;        (*parser <InfixNeg>)
-;; ;;        (*parser <InfixSub>)
-;; ;;        (*parser <InfixMul>)
-;; ;;        (*parser <InfixDiv>)
-;; ;;        (*parser <InfixPow>)
-;; ;;        (*parser <InfixArrayGet>)
-;; ;;        (*parser <InfixFuncall>)
-;; ;;        (*parser <InfixParen>)
-;; ;;        (*parser <InfixSexprEscape>)
-;; ;;        (*parser <InfixSymbol>)
-;; ;;        (*parser <Number>)
-;; ;;        
-;; ;;        (*disj 12)
-;; ;;   done))
 ;; 
 ;; ;; (define <InfixArrayGet>
 ;; ;;   (new (*parser <InfixExpression>)
