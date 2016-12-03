@@ -197,7 +197,7 @@
 
        (*pack-with
 	(lambda (open-delim chars close-delim)
-	  chars))
+	  (list->string chars)))
   done))
   
 ; ##################################### Symbol #####################################
@@ -225,8 +225,9 @@
 (define <Symbol>
   (new (*parser <SymbolChar>) *plus
 ;; 	(*pack (lambda (n) n))
+;;        (*caten 2)
 ;;        (*pack-with
-;; 	(lambda (n) n))
+;; 	(lambda (a b) `(,@(list ,@a ,@b))))
   done))
 
 ; ##################################### InfixExtension #####################################
@@ -255,11 +256,33 @@
   done))
        
 (define <InfixSymbol>
-  (new (*parser <Symbol>)
+  (new (*parser <SymbolChar>)
        (*parser <action-symbol>)
        *diff
+       (*pack
+	(lambda (a) a))
+	*plus
+       (*pack
+	(lambda (a) (list->string a)))
   done))
-
+  
+(define <InfixNeg>
+  (new (*parser (char #\-))
+;; 	(*pack (lambda (a) -))
+       (*delayed (lambda () <InfixNumberOrSymbol>))
+       (*caten 2)
+       (*pack-with
+	(lambda (neg num)
+	  `(- ,num)))
+  done))
+  
+(define <InfixNumberOrSymbol>
+  (new (*parser <InfixNeg>)
+       (*parser <Number>)
+       (*parser <InfixSymbol>)
+       (*disj 3)
+  done))
+       
 (define power
   (lambda (num pow)
      `(^ ,num ,pow)))
@@ -274,26 +297,27 @@
 
 ; Power
 (define <InfixPowerList>
-  (new (*parser <Number>)
+  (new (*parser <InfixNumberOrSymbol>)
        (*parser <PowerSymbol>)
        (*caten 2)
        (*pack-with
 	(lambda (n _^) n)) *plus
        
-       
-       (*parser <Number>)
+       (*parser <InfixNumberOrSymbol>)
+       ; todo maybe add here [] and ()
        (*caten 2)
        (*pack-with
 	(lambda (a b)
 	  (power-list (reverse (list* b (reverse a))))))
 	  
-       (*parser <Number>)
+       (*parser <InfixNumberOrSymbol>)
        (*disj 2)
   done))
 
 ; Multiplication & Division
 (define <InfixMulOrDiv>
   (new (*parser <InfixPowerList>)
+;;        (*parser <InfixPowerList>) ; gets 1+1 but not 1*1
        
        (*parser (char #\*))
 	(*pack (lambda (a) 1))
@@ -335,28 +359,62 @@
        (*disj 2)
   done))
   
-(define <InfixNeg>
-  (new (*parser (char #\-))
-;; 	(*pack (lambda (a) -))
+;; (define <InfixFunctionContinued>
+;;   (new (*parser (char #\,))
+;;        (*delayed (lambda () <InfixExpression>))
+;;        (*caten 2)
+;; ;;        (*pack-with (lambda (a b)
+;; ;; 	(list a b)))
+;;   done))
+  
+;; (define <yuval>
+;;   (new (*parser <InfixFunctionContinued>)
+;;        (*pack (lambda (a) `(,@a)))
+;;   done))
+  
+(define <InfixExpressionContinued>
+  (new (*parser (char #\[))					; Array
+       (*delayed (lambda () <InfixExpression>))
+       (*parser (char #\]))
+       (*caten 3)
+       (*pack-with
+	(lambda (a b c)
+	  `(,a ,@b ,c)))
+       
+       (*parser (char #\())					; Function
+       
+       (*delayed (lambda () <InfixExpression>)) ; first arguement
+       (*parser (char #\,))
        (*delayed (lambda () <InfixExpression>))
        (*caten 2)
        (*pack-with
-	(lambda (neg num)
-	  `(- ,num)))
+	(lambda (a b) `(,a ,b)))
+       (*pack
+	(lambda (a) `(,@a))) *star ; rest of the arguements
+       (*caten 2) ; 1 or many arguements
+       (*pack-with
+	(lambda (a b) `(,a ,@b)))
+       (*parser <epsilon>)
+       (*disj 2) ; 0,1 or many arguements
+       
+       (*parser (char #\)))
+       (*caten 3)
+       (*pack-with
+	(lambda (a b c)
+	  b))
+       
+       (*disj 2)						; Array / Function
   done))
   
 (define <InfixExpression>
-  (new 
-       (*parser <InfixAddOrSub>)
-       (*parser <InfixNeg>)
-;;        (*parser <InfixArrayGet>)
-;;        (*parser <InfixFuncall>)
-;;        (*parser <InfixParen>)
-;;        (*parser <InfixSexprEscape>)
-       (*parser <Number>)
-       (*parser <InfixSymbol>)
+  (new (*parser <InfixAddOrSub>)				; beginning of every InfixExpression
        
-        (*disj 4)
+       (*parser <InfixExpressionContinued>)
+       
+       (*caten 2)
+       
+       (*parser <InfixAddOrSub>)				; ending of every InfixExpression
+       (*disj 2)
   done))
   
 (define <InfixExtension>
