@@ -26,7 +26,7 @@
   (new (*parser (const
 	(lambda (c)
 	  (if (<= (char->integer c) 32)
-	    #t #f)))) *star
+	    #t #f)))) *star				; allowing WHITE-SPACES
 	    
        (*parser (char #\;))
        
@@ -49,11 +49,11 @@
   done))
 
 (define <Boolean>
-  (new (*parser <Comment>) *star
+  (new (*parser <Comment>) *star			; allowing COMMENTS
        (*parser (const
 	(lambda (c)
 	  (if (<= (char->integer c) 32)
-	    #t #f)))) *star
+	    #t #f)))) *star				; allowing WHITE-SPACES
        (*parser (^<MetaChar> "#t" #t))
 ;;        (*pack (lambda (a) `(,@a)))
        (*parser (^<MetaChar> "#f" #f))
@@ -65,41 +65,50 @@
        (*pack-with (lambda (a b) b))
        
        (*caten 2)
-       (*pack-with (lambda (a b) `(,@a ,b)))
+       (*pack-with (lambda (a b) b))			; handle added COMMENT
   done))
   
 ; ##################################### Char #####################################
 
 (define <CharPrefix>
-  (new (*parser (const
+  (new (*parser <Comment>) *star			; allowing COMMENTS
+       (*parser (const
 	(lambda (c)
 	  (if (<= (char->integer c) 32)
-	    #t #f)))) *star
+	    #t #f)))) *star				; allowing WHITE-SPACES
        (*parser (word-ci "#\\"))
        (*caten 2)
        (*pack-with (lambda (a b) b))
+       
+       (*caten 2)
+       (*pack-with (lambda (a b) b))			; handle added COMMENT
   done))  
 
 (define <VisibleSimpleChar>
-  (new (*parser (const
+  (new (*parser <Comment>) *star			; allowing COMMENTS
+       (*parser (const
 	(lambda (c)
 	  (if (<= (char->integer c) 32)
-	    #t #f)))) *star
+	    #t #f)))) *star				; allowing WHITE-SPACES
        (*parser <any-char>)
        (*guard (lambda (n) (> (char->integer n) 32))) ; no space or less characters
        
        (*caten 2)
        (*pack-with (lambda (a b) b))
+       
+       (*caten 2)
+       (*pack-with (lambda (a b) b))			; handle added COMMENT
 ;;        (*pack-with
 ;; 	(lambda (n)
 ;; 	  n))
   done))
   
 (define <NamedChar>
-  (new (*parser (const
+  (new (*parser <Comment>) *star			; allowing COMMENTS
+       (*parser (const
 	(lambda (c)
 	  (if (<= (char->integer c) 32)
-	    #t #f)))) *star
+	    #t #f)))) *star				; allowing WHITE-SPACES
        (*parser (^<MetaChar> " " #\space))
        (*parser (^<MetaChar> "\\n" #\newline))
        (*parser (^<MetaChar> "\\r" #\return))
@@ -115,13 +124,17 @@
        
        (*caten 2)
        (*pack-with (lambda (a b) b))
+       
+       (*caten 2)
+       (*pack-with (lambda (a b) b))			; handle added COMMENT
   done))
   
 (define <HexChar>
-  (new (*parser (const
+  (new (*parser <Comment>) *star			; allowing COMMENTS
+       (*parser (const
 	(lambda (c)
 	  (if (<= (char->integer c) 32)
-	    #t #f)))) *star
+	    #t #f)))) *star				; allowing WHITE-SPACES
        (*parser (range #\0 #\9))
        (*parser (range #\a #\f))
        
@@ -129,13 +142,17 @@
        
        (*caten 2)
        (*pack-with (lambda (a b) b))
+       
+       (*caten 2)
+       (*pack-with (lambda (a b) b))			; handle added COMMENT
   done))
 
 (define <HexUnicodeChar>
-  (new (*parser (const
+  (new (*parser <Comment>) *star			; allowing COMMENTS
+       (*parser (const
 	(lambda (c)
 	  (if (<= (char->integer c) 32)
-	    #t #f)))) *star
+	    #t #f)))) *star				; allowing WHITE-SPACES
        (*parser (char #\x))
        (*parser <HexChar>) *plus
        
@@ -143,6 +160,9 @@
        (*pack-with
 	(lambda (s x chars)
 	  (list->string chars)))
+	  
+       (*caten 2)
+       (*pack-with (lambda (a b) b))			; handle added COMMENT
   done))
 
 (define <Char>
@@ -165,10 +185,11 @@
 ; ##################################### Number #####################################
 
 (define <Natural>
-  (new (*parser (const
+  (new (*parser <Comment>) *star			; allowing COMMENTS
+       (*parser (const
 	(lambda (c)
 	  (if (<= (char->integer c) 32)
-	    #t #f)))) *star
+	    #t #f)))) *star				; allowing WHITE-SPACES
        (*parser (char #\0))
        (*caten 2)
        (*pack-with (lambda (a b) 0))
@@ -176,20 +197,24 @@
        (*parser (const
 	(lambda (c)
 	  (if (<= (char->integer c) 32)
-	    #t #f)))) *star
+	    #t #f)))) *star				; allowing WHITE-SPACES
        (*parser <digit-1-9>)
        (*caten 2)
        (*pack-with (lambda (s n) n)) *plus
        (*pack (lambda (a) (string->number (list->string `(,@a)))))
 
        (*disj 2)
+       
+       (*caten 2)
+       (*pack-with (lambda (a b) b))			; handle added COMMENT
   done))
   
 (define <Integer>
-  (new (*parser (const
+  (new (*parser <Comment>) *star			; allowing COMMENTS
+       (*parser (const
 	(lambda (c)
 	  (if (<= (char->integer c) 32)
-	    #t #f)))) *star
+	    #t #f)))) *star				; allowing WHITE-SPACES
 	    
        (*parser (char #\+))
        (*parser <Natural>)
@@ -208,6 +233,9 @@
        (*disj 3)
        (*caten 2)
        (*pack-with (lambda (s n) n))
+       
+       (*caten 2)
+       (*pack-with (lambda (a b) b))			; handle added COMMENT
   done))
 
 (define <Fraction>
@@ -230,35 +258,44 @@
 ; ##################################### String #####################################
 
 (define <StringHexChar>
-  (new (*parser (const
+  (new (*parser <Comment>) *star			; allowing COMMENTS
+       (*parser (const
 	(lambda (c)
 	  (if (<= (char->integer c) 32)
-	    #t #f)))) *star
+	    #t #f)))) *star				; allowing WHITE-SPACES
        (*parser (word-ci "\\x"))
        (*parser <HexChar>) *star
        
        (*caten 3)
         (*pack-with
 	  (lambda (s x ch) (list->string ch)))
+	  
+       (*caten 2)
+       (*pack-with (lambda (a b) b))			; handle added COMMENT
   done))
   
 (define <StringLiteralChar>
-  (new (*parser (const
+  (new (*parser <Comment>) *star			; allowing COMMENTS
+       (*parser (const
 	(lambda (c)
 	  (if (<= (char->integer c) 32)
-	    #t #f)))) *star
+	    #t #f)))) *star				; allowing WHITE-SPACES
        (*parser <any-char>)
        (*guard (lambda (n) (> (char->integer n) 92))) ; no backslash (\)
        
        (*caten 2)
        (*pack-with (lambda (a b) b))
+       
+       (*caten 2)
+       (*pack-with (lambda (a b) b))			; handle added COMMENT
   done))
 
 (define <StringMetaChar>
-  (new (*parser (const
+  (new (*parser <Comment>) *star			; allowing COMMENTS
+       (*parser (const
 	(lambda (c)
 	  (if (<= (char->integer c) 32)
-	    #t #f)))) *star
+	    #t #f)))) *star				; allowing WHITE-SPACES
        (*parser (word-ci "\\\\"))
        (*parser (word-ci "\\\""))
        (*parser (word-ci "\\n"))
@@ -270,6 +307,9 @@
        
        (*caten 2)
        (*pack-with (lambda (a b) (list->string b)))
+       
+       (*caten 2)
+       (*pack-with (lambda (a b) b))			; handle added COMMENT
   done))
 
 (define <StringChar>
@@ -295,10 +335,11 @@
 ; ##################################### Symbol #####################################
 
 (define <SymbolChar>
-  (new (*parser (const
+  (new (*parser <Comment>) *star			; allowing COMMENTS
+       (*parser (const
 	(lambda (c)
 	  (if (<= (char->integer c) 32)
-	    #t #f)))) *star
+	    #t #f)))) *star				; allowing WHITE-SPACES
        (*parser <digit-0-9>)
        (*parser <a-z>)
        (*parser <A-Z>)
@@ -318,6 +359,9 @@
        (*disj 15)
        (*caten 2)
        (*pack-with (lambda (a b) b))
+       
+       (*caten 2)
+       (*pack-with (lambda (a b) b))			; handle added COMMENT
   done))
 
 (define <Symbol>
@@ -345,10 +389,11 @@
   done))
   
 (define <action-symbol>
-  (new (*parser (const
+  (new (*parser <Comment>) *star			; allowing COMMENTS
+       (*parser (const
 	(lambda (c)
 	  (if (<= (char->integer c) 32)
-	    #t #f)))) *star
+	    #t #f)))) *star				; allowing WHITE-SPACES
        (*parser (char #\+))
        (*parser (char #\-))
        (*parser <PowerSymbol>)
@@ -357,6 +402,9 @@
        (*disj 5)
        (*caten 2)
        (*pack-with (lambda (a b) b))
+       
+       (*caten 2)
+       (*pack-with (lambda (a b) b))			; handle added COMMENT
   done))
        
 (define <InfixSymbol>
@@ -371,10 +419,11 @@
   done))
   
 (define <InfixNeg>
-  (new (*parser (const
+  (new (*parser <Comment>) *star			; allowing COMMENTS
+       (*parser (const
 	(lambda (c)
 	  (if (<= (char->integer c) 32)
-	    #t #f)))) *star
+	    #t #f)))) *star				; allowing WHITE-SPACES
        (*parser (char #\-))
 ;; 	(*pack (lambda (a) -))
        (*delayed (lambda () <InfixNumberOrSymbol>))
@@ -382,6 +431,9 @@
        (*pack-with
 	(lambda (s neg num)
 	  `(- ,num)))
+	  
+       (*caten 2)
+       (*pack-with (lambda (a b) b))			; handle added COMMENT
   done))
   
 ;; (define <InfixNegWithSpaces>
@@ -595,7 +647,14 @@
 ; ##################################### Sexpr #####################################
 
 (define <Sexpr>
-  (new (*parser <Boolean>)
+  (new (*parser <Comment>) *star			; allowing COMMENTS
+       
+       (*parser (const
+	(lambda (c)
+	  (if (<= (char->integer c) 32)
+	    #t #f)))) *star				; allowing WHITE-SPACES
+       
+       (*parser <Boolean>)
        (*parser <Char>)
        (*parser <Number>)
        (*parser <String>)
@@ -609,6 +668,14 @@
        (*delayed (lambda () <UnquotedAndSpliced>))
        (*parser <InfixExtension>)
        (*disj 13)
+       
+       (*caten 2)
+       (*pack-with (lambda (a b) b))
+       
+       (*parser <Comment>) *star			; allowing COMMENTS
+       
+       (*caten 3)
+       (*pack-with (lambda (a b c) b))			; handle added COMMENT
   done))
   
 ; ##################################### ProperList #####################################
