@@ -21,30 +21,86 @@
     (new (*parser (word-ci str))
 	  (*pack (lambda (_) ch))
   done)))
+  
+(define <Comment>
+  (new (*parser (const
+	(lambda (c)
+	  (if (<= (char->integer c) 32)
+	    #t #f)))) *star
+	    
+       (*parser (char #\;))
+       
+       (*parser (const
+	(lambda (c)
+	  (if (>= (char->integer c) 0)
+	    #t #f))))
+       (*guard (lambda (n) (not (= (char->integer n) 92)))) *star ; no space or less characters
+       (*pack (lambda (a) (list->string a)))
+       
+       (*parser (word-ci "\\n"))
+       (*pack (lambda (a) (list->string a)))
+       (*parser <end-of-input>)
+       (*pack (lambda (a) ""))
+       (*disj 2)
+       
+       (*caten 4)
+       (*pack-with (lambda (a b c d) (list->string (list* b (string->list c)))))
+;;        `(,b ,c ,d)))
+  done))
 
 (define <Boolean>
-  (new (*parser (^<MetaChar> "#t" #t))
+  (new (*parser <Comment>) *star
+       (*parser (const
+	(lambda (c)
+	  (if (<= (char->integer c) 32)
+	    #t #f)))) *star
+       (*parser (^<MetaChar> "#t" #t))
+;;        (*pack (lambda (a) `(,@a)))
        (*parser (^<MetaChar> "#f" #f))
+;;        (*pack (lambda (a) `(,@a)))
 
        (*disj 2)
+       
+       (*caten 2)
+       (*pack-with (lambda (a b) b))
+       
+       (*caten 2)
+       (*pack-with (lambda (a b) `(,@a ,b)))
   done))
   
 ; ##################################### Char #####################################
 
 (define <CharPrefix>
-  (new (*parser (word-ci "#\\"))
+  (new (*parser (const
+	(lambda (c)
+	  (if (<= (char->integer c) 32)
+	    #t #f)))) *star
+       (*parser (word-ci "#\\"))
+       (*caten 2)
+       (*pack-with (lambda (a b) b))
   done))  
 
 (define <VisibleSimpleChar>
-  (new (*parser <any-char>)
-       (*guard (lambda (n) (> (char->integer n) 32))) ; no space
+  (new (*parser (const
+	(lambda (c)
+	  (if (<= (char->integer c) 32)
+	    #t #f)))) *star
+       (*parser <any-char>)
+       (*guard (lambda (n) (> (char->integer n) 32))) ; no space or less characters
+       
+       (*caten 2)
+       (*pack-with (lambda (a b) b))
 ;;        (*pack-with
 ;; 	(lambda (n)
 ;; 	  n))
   done))
   
 (define <NamedChar>
-  (new (*parser (^<MetaChar> " " #\space))
+  (new (*parser (const
+	(lambda (c)
+	  (if (<= (char->integer c) 32)
+	    #t #f)))) *star
+       (*parser (^<MetaChar> " " #\space))
        (*parser (^<MetaChar> "\\n" #\newline))
        (*parser (^<MetaChar> "\\r" #\return))
        (*parser (^<MetaChar> "\\t" #\tab))
@@ -53,25 +109,39 @@
        (*parser (^<MetaChar> "alef" (integer->char 1488)))
        (*parser (^<MetaChar> "bismillah" (integer->char 65021)))
        (*parser (^<MetaChar> "smiley" (integer->char 9786)))
-;;        (*parser (^<MetaChar> "" #\nul)) ; TODO change so it will work
+       (*parser (^<MetaChar> "" #\nul)) ; TODO change so it will work
 
-       (*disj 9)
+       (*disj 10)
+       
+       (*caten 2)
+       (*pack-with (lambda (a b) b))
   done))
   
 (define <HexChar>
-  (new (*parser (range #\0 #\9))
+  (new (*parser (const
+	(lambda (c)
+	  (if (<= (char->integer c) 32)
+	    #t #f)))) *star
+       (*parser (range #\0 #\9))
        (*parser (range #\a #\f))
        
        (*disj 2)
+       
+       (*caten 2)
+       (*pack-with (lambda (a b) b))
   done))
 
 (define <HexUnicodeChar>
-  (new (*parser (char #\x))
+  (new (*parser (const
+	(lambda (c)
+	  (if (<= (char->integer c) 32)
+	    #t #f)))) *star
+       (*parser (char #\x))
        (*parser <HexChar>) *plus
        
-       (*caten 2)
+       (*caten 3)
        (*pack-with
-	(lambda (x chars)
+	(lambda (s x chars)
 	  (list->string chars)))
   done))
 
@@ -95,23 +165,33 @@
 ; ##################################### Number #####################################
 
 (define <Natural>
-  (new (*parser (char #\0))
-       (*pack (lambda (_) 0))
-
-       (*parser <digit-1-9>)
-       (*parser <digit-0-9>) *star
+  (new (*parser (const
+	(lambda (c)
+	  (if (<= (char->integer c) 32)
+	    #t #f)))) *star
+       (*parser (char #\0))
        (*caten 2)
-       (*pack-with
- (lambda (a s)
-   (string->number
-    (list->string
-     `(,a ,@s)))))
+       (*pack-with (lambda (a b) 0))
+
+       (*parser (const
+	(lambda (c)
+	  (if (<= (char->integer c) 32)
+	    #t #f)))) *star
+       (*parser <digit-1-9>)
+       (*caten 2)
+       (*pack-with (lambda (s n) n)) *plus
+       (*pack (lambda (a) (string->number (list->string `(,@a)))))
 
        (*disj 2)
   done))
   
 (define <Integer>
-  (new (*parser (char #\+))
+  (new (*parser (const
+	(lambda (c)
+	  (if (<= (char->integer c) 32)
+	    #t #f)))) *star
+	    
+       (*parser (char #\+))
        (*parser <Natural>)
        (*caten 2)
        (*pack-with
@@ -126,7 +206,8 @@
        (*parser <Natural>)
 
        (*disj 3)
-
+       (*caten 2)
+       (*pack-with (lambda (s n) n))
   done))
 
 (define <Fraction>
@@ -149,35 +230,46 @@
 ; ##################################### String #####################################
 
 (define <StringHexChar>
-  (new (*parser (word-ci "\\x"))
+  (new (*parser (const
+	(lambda (c)
+	  (if (<= (char->integer c) 32)
+	    #t #f)))) *star
+       (*parser (word-ci "\\x"))
        (*parser <HexChar>) *star
        
-       (*caten 2)
+       (*caten 3)
         (*pack-with
-	  (lambda (x ch) (list->string ch)))
+	  (lambda (s x ch) (list->string ch)))
   done))
   
 (define <StringLiteralChar>
-  (new (*parser <any-char>)
+  (new (*parser (const
+	(lambda (c)
+	  (if (<= (char->integer c) 32)
+	    #t #f)))) *star
+       (*parser <any-char>)
        (*guard (lambda (n) (> (char->integer n) 92))) ; no backslash (\)
+       
+       (*caten 2)
+       (*pack-with (lambda (a b) b))
   done))
 
 (define <StringMetaChar>
-  (new (*parser (word-ci "\\\\"))
+  (new (*parser (const
+	(lambda (c)
+	  (if (<= (char->integer c) 32)
+	    #t #f)))) *star
+       (*parser (word-ci "\\\\"))
        (*parser (word-ci "\\\""))
        (*parser (word-ci "\\n"))
        (*parser (word-ci "\\r"))
        (*parser (word-ci "\\t"))
        (*parser (word-ci "\\f"))
-;;        (*parser (^<MetaChar> "\\n" #\newline))
-;;        (*parser (^<MetaChar> "\\r" #\return))
-;;        (*parser (^<MetaChar> "\\t" #\tab))
-;;        (*parser (^<MetaChar> "\\f" #\page))
 
        (*disj 6)
-;;        (*pack-with
-;; 	(lambda (n)
-;; 	  (list->string n)))
+       
+       (*caten 2)
+       (*pack-with (lambda (a b) (list->string b)))
   done))
 
 (define <StringChar>
@@ -203,7 +295,11 @@
 ; ##################################### Symbol #####################################
 
 (define <SymbolChar>
-  (new (*parser <digit-0-9>)
+  (new (*parser (const
+	(lambda (c)
+	  (if (<= (char->integer c) 32)
+	    #t #f)))) *star
+       (*parser <digit-0-9>)
        (*parser <a-z>)
        (*parser <A-Z>)
        (*parser (char #\!))
@@ -220,6 +316,8 @@
        (*parser (char #\/))
        
        (*disj 15)
+       (*caten 2)
+       (*pack-with (lambda (a b) b))
   done))
 
 (define <Symbol>
@@ -247,12 +345,18 @@
   done))
   
 (define <action-symbol>
-  (new (*parser (char #\+))
+  (new (*parser (const
+	(lambda (c)
+	  (if (<= (char->integer c) 32)
+	    #t #f)))) *star
+       (*parser (char #\+))
        (*parser (char #\-))
        (*parser <PowerSymbol>)
        (*parser (char #\*))
        (*parser (char #\/))
        (*disj 5)
+       (*caten 2)
+       (*pack-with (lambda (a b) b))
   done))
        
 (define <InfixSymbol>
@@ -267,20 +371,44 @@
   done))
   
 (define <InfixNeg>
-  (new (*parser (char #\-))
+  (new (*parser (const
+	(lambda (c)
+	  (if (<= (char->integer c) 32)
+	    #t #f)))) *star
+       (*parser (char #\-))
 ;; 	(*pack (lambda (a) -))
        (*delayed (lambda () <InfixNumberOrSymbol>))
-       (*caten 2)
+       (*caten 3)
        (*pack-with
-	(lambda (neg num)
+	(lambda (s neg num)
 	  `(- ,num)))
   done))
+  
+;; (define <InfixNegWithSpaces>
+;;   (new (*parser (const (is-white-space))) *star
+;;        (*parser (char #\-))
+;; ;; 	(*pack (lambda (a) -))
+;;        (*delayed (lambda () <InfixNumberOrSymbol>))
+;;        (*caten 3)
+;;        (*pack-with
+;; 	(lambda (s neg num)
+;; 	  `(- ,num)))
+;;   done))
+
   
 (define <InfixNumberOrSymbol>
   (new (*parser <InfixNeg>)
        (*parser <Number>)
+       
        (*parser <InfixSymbol>)
-       (*disj 3)
+       
+       (*parser <InfixExpressionContinued>)
+       (*parser <epsilon>)
+       (*disj 2)
+       
+       (*caten 2)				; allowing a symbol to continue to an Array or a Function
+       
+       (*disj 3)				; Neg / Number / (Symbol / Array / Function)
   done))
        
 (define power
@@ -379,16 +507,17 @@
        (*caten 3)
        (*pack-with
 	(lambda (a b c)
-	  `(,a ,@b ,c)))
+	  `(,a ,b ,c)))
        
        (*parser (char #\())					; Function
        
        (*delayed (lambda () <InfixExpression>)) ; first arguement
+       
        (*parser (char #\,))
        (*delayed (lambda () <InfixExpression>))
        (*caten 2)
        (*pack-with
-	(lambda (a b) `(,a ,b)))
+	(lambda (a b) `(,a ,@b)))
        (*pack
 	(lambda (a) `(,@a))) *star ; rest of the arguements
        (*caten 2) ; 1 or many arguements
