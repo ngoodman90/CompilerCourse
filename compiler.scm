@@ -343,6 +343,7 @@
        (*parser <digit-0-9>)
        (*parser <a-z>)
        (*parser <A-Z>)
+       (*pack (lambda (c) (char-downcase c))); converts upper case char to lower case
        (*parser (char #\!))
        (*parser (char #\$))
        (*parser (char #\^))
@@ -446,6 +447,43 @@
 ;; 	(lambda (s neg num)
 ;; 	  `(- ,num)))
 ;;   done))
+
+
+(define <InfixExpressionContinued>
+  (new (*parser (char #\[))					; Array
+       (*delayed (lambda () <InfixExpression>))
+       (*parser (char #\]))
+       (*caten 3)
+       (*pack-with
+	(lambda (a b c)
+	  `(,a ,b ,c)))
+       
+       (*parser (char #\())					; Function
+       
+       (*delayed (lambda () <InfixExpression>)) ; first arguement
+       
+       (*parser (char #\,))
+       (*delayed (lambda () <InfixExpression>))
+       (*caten 2)
+       (*pack-with
+	(lambda (a b) `(,a ,@b)))
+       (*pack
+	(lambda (a) `(,@a))) *star ; rest of the arguements
+       (*caten 2) ; 1 or many arguements
+       (*pack-with
+	(lambda (a b) `(,a ,@b)))
+       (*parser <epsilon>)
+       (*disj 2) ; 0,1 or many arguements
+       
+       (*parser (char #\)))
+       (*caten 3)
+       (*pack-with
+	(lambda (a b c)
+	  b))
+       
+       (*disj 2)						; Array / Function
+  done))
+
 
   
 (define <InfixNumberOrSymbol>
