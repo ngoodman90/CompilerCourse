@@ -4,6 +4,7 @@
 
 (load "pc.scm")
 (load "pattern-matcher.scm")
+(load "qq.scm")
 
 ; ####################################### Useful Lambdas #######################################
 
@@ -850,7 +851,7 @@ unquote-splicing quote set!))
     (pattern-rule 
       `(if ,(? 'test) ,(? 'then))
        (lambda (test then)
-      `(if3 ,(parse test) ,(parse then) (parse ,(void)))))
+      `(if3 ,(run test) ,(run then) (const ,(void)))))
     ;if with 3 args
     (pattern-rule 
       `(if ,(? 'test) ,(? 'then) ,(? 'else))
@@ -872,7 +873,21 @@ unquote-splicing quote set!))
       (lambda (key value other-bindings body)
       `(let (,(run key) ,(run value))
       ,(run (list 'let* other-bindings body)))))
-  )))
+    ;MIT define 3.1.16
+    (pattern-rule
+      `(define (,(? 'define-first-var  var?) . ,(? 'other-vars)) ,(? 'expr))
+      (lambda (define-first-var other-vars expr)
+      	(run (list 'define define-first-var '( 'lambda '( other-vars ') expr)))))
+    ;regular define 3.1.16
+    (pattern-rule
+      `(define ,(? 'define-var var?) ,(? 'expr))
+    (lambda (define-var expr)
+      `(define '(var define-var) ,(run expr))))
+    ;assignments 3.1.17
+    (pattern-rule
+      `(set! ,(? 'set-var var?) ,(? 'expr))
+    (lambda (set-var expr)
+      `(set '(var set-var) ,(run expr))))
   (lambda (sexpr)
   (run sexpr (lambda () '(this is what happens when the tag
   parser fails to match the input))))))
