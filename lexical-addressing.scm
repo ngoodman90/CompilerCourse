@@ -34,12 +34,12 @@
 (define lex-address-bvar-lambda
   (lambda (lambda-body lambda-var major minor)
     (cond ((lambda-simple? lambda-body) (part-of-list lambda-var (cadr lambda-body) lambda-body
-                                    `(,(car lambda-body) ,(cadr lambda-body) ,@(lex-address-bvar (cddr lambda-body) lambda-var (+ 1 major) minor))))
+                                    `(,(car lambda-body) ,(cadr lambda-body) ,@(lex-address-bvar (cddr lambda-body) lambda-var (add1 major) minor))))
           ((lambda-opt? lambda-body) (part-of-list lambda-var (cons (caddr lambda-body) (cadr lambda-body)) lambda-body
                                     `(,(car lambda-body) ,(cadr lambda-body) ,(caddr lambda-body)
-                                                  ,@(lex-address-bvar (cdddr lambda-body) lambda-var (+ 1 major) minor))))
+                                                  ,@(lex-address-bvar (cdddr lambda-body) lambda-var (add1 major) minor))))
           ((lambda-var? lambda-body) (part-of-list lambda-var (cadr lambda-body) lambda-body
-                                    `(,(car lambda-body) ,(cadr lambda-body) ,@(lex-address-bvar (cddr lambda-body) lambda-var (+ 1 major) minor)))))
+                                    `(,(car lambda-body) ,(cadr lambda-body) ,@(lex-address-bvar (cddr lambda-body) lambda-var (add1 major) minor)))))
     ))
 
 (define lex-address-bvar
@@ -72,7 +72,7 @@
 (define lex-address
   (lambda (body vars minor)
     (if (null? vars) body
-        (lex-address (lex-address-pvar body (car vars) minor) (cdr vars) (+ 1 minor)))
+        (lex-address (lex-address-pvar body (car vars) minor) (cdr vars) (add1 minor)))
     ))
 
 (define lex-pe-lambda
