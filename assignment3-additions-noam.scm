@@ -27,6 +27,46 @@
     (or (null? expr) (not (pair? expr)))))
 
 
+
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;; Removing redundant applications ;;;;;;;;;;;;;;;;;
+
+
+(define remove-applic-expr-helper?
+	(lambda (expr)
+		(and 
+			(pair? expr) 
+			(lambda-simple? expr) 
+			(= 3 (length expr)) 
+			(null? (cadr expr)))
+		))
+
+(define remove-applic-expr?
+  (lambda (expr)
+    (and 
+    	(equal? 'applic (car expr)) 
+    	(remove-applic-expr-helper? (cadr expr)))
+    ))
+
+(define remove-applic-lambda-nil
+  (lambda (expr)
+    (cond ((null-or-not-pair? expr) expr)
+          ((remove-applic-expr? expr) (remove-applic-lambda-nil (caddr (cadr expr))))
+          (else `(,(remove-applic-lambda-nil (car expr)) ,@(remove-applic-lambda-nil (cdr expr)))))
+    ))
+
+
+
+
+;;;;;;;; Annotating Variables with their Lexical address ;;;;;;;;;;;;;;
+
+
+
+
+
 (define part-of-list
   (lambda (var lst part not-part)
     (if (member var lst) part not-part)))
@@ -98,26 +138,23 @@
 
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;; Annotating tail calls ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 
 
-
-(define prepare-seq-to-tail
-  (lambda (e not-tail is-first?)
-    (cond ((and is-first? (= 1 (length e))) `(,(list not-tail) ,e))
-          ((null? (cdr e)) `(,not-tail ,e))
-          (else (prepare-seq-to-tail (cdr e) (if is-first? `(,not-tail ,(car e)) `(,@not-tail ,(car e))) #f)))
+(define tc-helper
+  (lambda (expr rest first?)
+    (cond ((and first? (= 1 (length expr))) `(,(list rest) ,expr))
+          ((null? (cdr expr)) `(,rest ,expr))
+          (else (tc-helper (cdr expr) (if first? `(,rest ,(car expr)) `(,@rest ,(car expr))) #f)))
     ))
 
-
-;(define annotate-tc 1)
-
-(define annotate-tail-lambda
+(define lambda-tail-helper
   (lambda (pe)
-    (cond ((lambda-simple? pe)`(,(car pe) ,(cadr pe) ,(annotate-tail (caddr pe))))
-          ((lambda-opt? pe) `(,(car pe) ,(cadr pe) ,(caddr pe) ,(annotate-tail (cadddr pe))))
-          ((lambda-var? pe) `(,(car pe) ,(cadr pe) ,(annotate-tail (caddr pe)))))
+    (cond ((lambda-simple? pe)`(,(car pe) ,(cadr pe) ,(lambda-tail (caddr pe))))
+          ((lambda-opt? pe) `(,(car pe) ,(cadr pe) ,(caddr pe) ,(lambda-tail (cadddr pe))))
+          ((lambda-var? pe) `(,(car pe) ,(cadr pe) ,(lambda-tail (caddr pe)))))
           ))
 
 (define dont-care?
@@ -127,40 +164,45 @@
 
 (define definition?
   (lambda (pe)
-    (or (equal? 'def (car pe)) (equal? 'define (car pe)))))
+    (member (car pe) (list 'def 'define))))
 
 (define set-op?
   (lambda (pe)
-    (or (equal? 'box-set (car pe)) (equal? 'set (car pe)))))
+    (member (car pe) (list 'set 'box-set))))
 
-(define annotate-tail
-  (lambda (pe)
-    (cond ((dont-care? pe) pe)
-          ((lambda-expr? pe) (annotate-tail-lambda pe))
-          ((equal? 'if3 (car pe)) `(if3 ,(annotate-tc (cadr pe)) ,(annotate-tail (caddr pe)) ,(annotate-tail (cadddr pe))))
-          ((equal? 'or (car pe)) `(or (,@(car (prepare-seq-to-tail (cdadr pe) (caadr pe) #t)) 
-                                       ,@(annotate-tail (cadr (prepare-seq-to-tail (cdadr pe) (caadr pe) #t))))));;;;;;
-          ((definition? pe) `(,(car pe) ,(cadr pe) ,(annotate-tc (caddr pe))))
+(define same-op?
+	(lambda (pe)
+		(or (dont-care? pe) (lambda-expr? pe) (definition? pe) (set-op? pe) (equal? 'box (car pe)))))
+
+(define same-op
+	(lambda (pe)
+		(cond ((dont-care? pe) pe)
+					((lambda-expr? pe) (lambda-tail-helper pe))
+					((definition? pe) `(,(car pe) ,(cadr pe) ,(annotate-tc (caddr pe))))
           ((set-op? pe) `(,(car pe) ,(cadr pe) ,@(annotate-tc (cddr pe))))
-          ((equal? 'box (car pe)) `(box ,@(annotate-tc (cdr pe))))
-          ((equal? 'applic (car pe)) `(tc-applic ,(annotate-tc (cadr pe)) ,(map annotate-tc (caddr pe))));;;;;;;;
-          ((equal? 'seq (car pe)) `(seq ,`(,@(map annotate-tc (car (prepare-seq-to-tail (cdadr pe) (caadr pe) #t)))
-                                                 ,@(annotate-tail (cadr (prepare-seq-to-tail (cdadr pe) (caadr pe) #t))))));;;;;
-          (else `(,(annotate-tail (car pe)))));;;;;;
+          ((equal? 'box (car pe)) `(box ,@(annotate-tc (cdr pe)))))
+		))
+
+(define lambda-tail
+  (lambda (pe)
+    (cond ((same-op? pe) (same-op pe))
+          ((equal? 'if3 (car pe)) `(if3 ,(annotate-tc (cadr pe)) ,(lambda-tail (caddr pe)) ,(lambda-tail (cadddr pe))))
+          ((equal? 'or (car pe)) `(or (,@(car (tc-helper (cdadr pe) (caadr pe) #t)) 
+                                       ,@(lambda-tail (cadr (tc-helper (cdadr pe) (caadr pe) #t))))))
+          ((equal? 'applic (car pe)) `(tc-applic ,(annotate-tc (cadr pe)) ,(map annotate-tc (caddr pe))))
+          ((equal? 'seq (car pe)) `(seq ,`(,@(map annotate-tc (car (tc-helper (cdadr pe) (caadr pe) #t)))
+                                                 ,@(lambda-tail (cadr (tc-helper (cdadr pe) (caadr pe) #t))))))
+          (else `(,(lambda-tail (car pe)))))
     ))
 
 
 (define annotate-tc
   (lambda (pe)
-    (cond ((dont-care? pe) pe)
-          ((lambda-expr? pe) (annotate-tail-lambda pe))
-          ((equal? 'if3 (car pe)) `(if3 ,(annotate-tc (cadr pe)) ,(annotate-tc (caddr pe)) ,(annotate-tc (cadddr pe))));;;;;
-          ((equal? 'or (car pe)) `(or (,@(car (prepare-seq-to-tail (cdadr pe) (caadr pe) #t)) 
-                                       ,@(annotate-tc (cadr (prepare-seq-to-tail (cdadr pe) (caadr pe) #t))))));;;;;;
-          ((definition? pe) `(,(car pe) ,(cadr pe) ,(annotate-tc (caddr pe))))
-          ((set-op? pe) `(,(car pe) ,(cadr pe) ,@(annotate-tc (cddr pe))))
-          ((equal? 'box (car pe)) `(box ,@(annotate-tc (cdr pe))))
-          ((equal? 'applic (car pe)) `(applic ,(annotate-tc (cadr pe)) ,(map annotate-tc (caddr pe))));;;;;;;;
-          ((equal? 'seq (car pe)) `(seq ,(map annotate-tc (cadr pe))));;;
-          (else `(,(annotate-tc (car pe)))));;;;;;;;;;;;
-    ))   
+    (cond ((same-op? pe) (same-op pe))
+          ((equal? 'if3 (car pe)) `(if3 ,(annotate-tc (cadr pe)) ,(annotate-tc (caddr pe)) ,(annotate-tc (cadddr pe))))
+          ((equal? 'or (car pe)) `(or (,@(car (tc-helper (cdadr pe) (caadr pe) #t)) 
+                                       ,@(annotate-tc (cadr (tc-helper (cdadr pe) (caadr pe) #t))))))
+          ((equal? 'applic (car pe)) `(applic ,(annotate-tc (cadr pe)) ,(map annotate-tc (caddr pe))))
+          ((equal? 'seq (car pe)) `(seq ,(map annotate-tc (cadr pe))))
+          (else `(,(annotate-tc (car pe)))))
+    ))
