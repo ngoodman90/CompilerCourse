@@ -5,6 +5,7 @@
 (load "pc.scm")
 (load "pattern-matcher.scm") 
 (load "qq.scm")
+(load "lexical-addressing.scm")
 
 ; ####################################### Useful Lambdas #######################################
 
