@@ -3,7 +3,7 @@
 ; Noam Goodman      301364329
 
 (load "pc.scm")
-(load "pattern-matcher.scm")
+(load "pattern-matcher.scm") 
 (load "qq.scm")
 
 ; ####################################### Useful Lambdas #######################################
@@ -823,72 +823,410 @@
         (*pack-with (lambda (s expr) (list 'unquote-splicing expr)))
     done))
 
-;############################## Assignment 2 ##############################
+; ####################################### Ass2 starts here #######################################
 
+(define error "ERROR")
 
-;reserved words
-(define reserved-words
-'(and begin cond define do else if lambda
-let let* letrec or quasiquote unquote
-unquote-splicing quote set!))
+(define throw-error
+    (lambda ()
+        error))
+        
+; ####################################### Constants #######################################
 
-; variable predicate
-(define var?
-  (lambda (x)
-  (and (symbol? x)
-  (not (member x reserved-words)))))
+(define constant?
+    (lambda (c)
+	(or (number? c) (char? c) (boolean? c) (string? c) (eq? c (void)))))
 
+(define const-record
+    (compose-patterns
+	(pattern-rule 
+            (? 'expr constant?)
+            (lambda (expr) (list 'const expr)))
+            
+        (pattern-rule 
+	    `(quote ,(? 'expr))
+            (lambda (expr) (list 'const expr)))))
+
+; ####################################### Variables #######################################
+
+(define *reserved-words*
+    '(begin define
+    cond if else and or
+    do lambda let let* letrec
+    quote unquote quasiquote unquote-splicing
+    set!))
+
+(define unreserved-word?
+    (lambda (w)
+        (not (member w *reserved-words*))))
+
+(define variable?
+    (lambda (w)
+	(and (symbol? w) (unreserved-word? w))))
+
+(define variable-record
+    (pattern-rule 
+        (? 'expr variable?)
+        (lambda (expr) (list 'var expr))))
+
+; ####################################### Conditionals #######################################
+
+(define do-parse
+    (lambda (expr) (parse expr)))
+
+(define condition-record
+    (compose-patterns
+        (pattern-rule
+            '(if)
+            (throw-error))
+            
+        (pattern-rule
+            '(if ,(? 'test))
+            (lambda (test) 
+                error))
+		   
+	(pattern-rule
+            `(if ,(? 'test) ,(? 'dit))
+            (lambda (test dit) 
+                `(if3 ,(do-parse test) ,(do-parse dit) ,(do-parse (void)))))
+        
+        (pattern-rule
+            `(if ,(? 'test) ,(? 'dit) ,(? 'dif))
+            (lambda (test dit dif) 
+                `(if3 ,(do-parse test) ,(do-parse dit) ,(do-parse dif))))))
+            
+; ####################################### Disjunctions #######################################
+	
+(define parse-list
+    (lambda (lst)
+        (if (null? lst)
+            '()
+            (if (null? (cdr lst))
+                (list (do-parse (car lst)))
+                `(,(do-parse (car lst)) ,@(parse-list (cdr lst)))))))
+		
+(define or-record
+    (compose-patterns
+        (pattern-rule 
+            `(or)
+            (lambda () 
+                (do-parse #f)))
+	
+	(pattern-rule 
+            `(or ,(? 'expr))
+            (lambda (expr) 
+                (do-parse expr)))
+   
+	(pattern-rule 
+            `(or ,(? 'expr) . ,(? 'expr-lst))
+            (lambda (expr expr-lst) 
+                `(or (,(do-parse expr) ,@(parse-list expr-lst)))))))
+
+; ####################################### Lambda Forms #######################################
+                
+(define is-member-of-list?
+    (lambda (m lst)
+        (if (not (pair? lst))
+            (eq? m lst)
+            (if (not (eq? m (car lst)))
+                (is-member-of-list? m (cdr lst))
+                #t))))
+
+(define duplicate-variables?
+    (lambda (lst)
+        (if (not (pair? lst))
+            #f
+            (or (is-member-of-list? (car lst) (cdr lst))
+                (duplicate-variables? (cdr lst))))))
+
+(define regular-lambda?
+    (lambda (lst)
+        (and (list? lst) (not (duplicate-variables? lst)))))
+        
+(define lambda-with-optional-arguements?
+    (lambda (pair)
+        (and (pair? pair) (not (duplicate-variables? pair)))))
+		
+(define get-mandatory-variables
+    (lambda (pair)
+        (if (pair? pair)
+            `(,(car pair) ,@(get-mandatory-variables (cdr pair)))
+            '())))
+		
+(define get-v-rest
+    (lambda (pair)
+        (cdr (last-pair pair))))
+		
+(define variadic-lambda?
+    (lambda (lst)
+        (if (variable? lst)
+            #t
+            #f)))
+    
+(define lambda-record
+    (compose-patterns
+        (pattern-rule                                                                  ; error lambda
+            '(lambda)
+            (throw-error))
+            
+        (pattern-rule                                                                  ; error lambda
+            '(lambda . ,(? 'expr-lst))
+            (lambda (expr-lst) error))
+            
+	(pattern-rule                                                                  ; lambda-simple
+            `(lambda ,(? 'vars regular-lambda?) ,(? 'expr) . ,(? 'expr-lst))
+            (lambda (vars expr expr-lst)
+                `(lambda-simple ,vars ,(do-parse `(begin ,expr ,@expr-lst)))))
+		   
+	(pattern-rule                                                                  ; lambda-opt
+            `(lambda ,(? 'vars lambda-with-optional-arguements?) ,(? 'expr) . ,(? 'expr-lst))
+            (lambda (vars expr expr-lst)
+                `(lambda-opt ,(get-mandatory-variables vars) ,(get-v-rest vars) ,(do-parse `(begin ,expr ,@expr-lst)))))
+
+	(pattern-rule                                                                  ; lambda-var
+            `(lambda ,(? 'vars variadic-lambda?) ,(? 'expr) . ,(? 'expr-lst))
+            (lambda (vars expr expr-lst)
+                `(lambda-var ,vars ,(do-parse `(begin ,expr ,@expr-lst)))))))
+		
+; ####################################### Define #######################################
+		
+(define define-record
+    (compose-patterns
+	(pattern-rule                                                                  ; Regular Define
+            `(define ,(? 'var variable?) . ,(? 'expr))
+            (lambda (var expr)
+                `(def ,(do-parse var) ,(do-parse (cons 'begin expr)))))
+	
+	(pattern-rule                                                                  ; MIT Define
+            `(define ,(? 'var pair?) . ,(? 'expr))
+            (lambda (var expr) 
+                    `(def ,(do-parse (car var)) ,(do-parse `(lambda ,(cdr var) ,(cons 'begin expr))))))))
+		   
+; ####################################### Assignments #######################################
+
+(define set-record
+    (pattern-rule 
+        `(set! ,(? 'var variable?) ,(? 'expr))
+        (lambda (var expr)
+            `(set ,(do-parse var) ,(do-parse expr)))))
+
+; ####################################### Applications #######################################
+
+(define applic-record
+    (pattern-rule
+        `(,(? 'expr unreserved-word?) . ,(? 'expr-lst))
+	(lambda (expr expr-lst)
+            `(applic ,(do-parse expr) ,(parse-list expr-lst)))))
+
+; ####################################### Sequences #######################################
+
+(define empty-or-single-member-or-no-list?
+    (lambda (lst)
+        (or (not (list? lst)) (null? lst) (and (not (list? (car lst))) (null? (cdr lst))))))
+
+(define organize-begin-list
+    (lambda (lst)
+        (if (empty-or-single-member-or-no-list? lst)
+            (if (not (list? lst))
+                (list lst)                                                                       ; make list
+                (if (or (null? lst) (eq? 'begin (car lst))) '() lst))                            ; empty list or single member list
+            (if (not (list? (car lst)))
+                (if (eq? (car lst) 'begin)
+                    (organize-begin-list (cdr lst))                                              ; ( begin ... )
+                    (append (list (car lst)) (organize-begin-list (cdr lst))))                   ; ( ... )
+                (if (eq? (caar lst) 'begin)
+                    (append (organize-begin-list (cdar lst)) (organize-begin-list (cdr lst)))     ; ( ( begin ... ) ... )
+                    (cons (car lst) (organize-begin-list (cdr lst))))))))                         ; ( ( ... ) ... )
+            
+(define seq-record
+    (compose-patterns  
+	(pattern-rule 
+            `(begin)
+            (lambda ()
+                (do-parse (void))))
+
+	(pattern-rule 
+            `(begin ,(? 'expr))
+	     (lambda (expr)
+                (do-parse expr)))
+		  
+	(pattern-rule
+            `(begin ,(? 'expr) . ,(? 'expr-lst))
+            (lambda (expr expr-lst)
+                (let ((new-expr-lst (organize-begin-list expr-lst)))
+                    (if (not (null? new-expr-lst))
+                        `(seq (,(do-parse expr) ,@(parse-list new-expr-lst)))
+                        (do-parse expr)))))))
+
+; ####################################### Quasi Quote #######################################
+                    
+(define quasi-quote-record
+    (compose-patterns
+        (pattern-rule
+            `(,(string->symbol "quasiquote") ,(? 'qq))
+            (lambda (qq)
+                (parse (expand-qq qq))))))
+		    
+; ####################################### And #######################################
+		    
+(define and-macro-expander
+    (compose-patterns	
+	(pattern-rule 
+            `(and)
+            (lambda () 
+                (do-parse #t)))
+                
+        (pattern-rule 
+            `(and ,(? 'expr))
+            (lambda (expr) 
+                (do-parse expr)))
+	
+	(pattern-rule
+            `(and ,(? 'expr) . ,(? 'expr-lst))
+            (lambda (expr expr-lst)
+                (do-parse `(and ,expr ,@expr-lst))))))
+
+; ####################################### Let #######################################
+
+(define let-variables
+    (lambda (lst)
+        (if (null? lst)
+            '()
+            `(,(caar lst) ,@(let-variables(cdr lst))))))
+	  
+(define let-values
+    (lambda (lst)
+        (if (null? lst)
+            '()
+            `(,(cadar lst) ,@(let-values(cdr lst))))))
+            
+(define let-macro-expander
+    (compose-patterns
+        (pattern-rule
+            '(let)
+            (throw-error))
+            
+        (pattern-rule
+            '(let ,(? 'arguements))
+            (lambda (arguements)
+                error))
+            
+        (pattern-rule
+            `(let ,(? 'arguements) ,(? 'body) . ,(? 'next-body))
+            (lambda (arguements body next-body)
+                (let ((vars (let-variables arguements))
+                    (vals (let-values arguements)))
+		    (if (not (duplicate-variables? vars))
+                        ((lambda () (parse `((lambda ,vars ,body ,@next-body) ,@vals))))
+                        error))))))
+
+; ####################################### Letrec #######################################
+            
+(define pair-up-vars-and-vals
+    (lambda (vars vals)
+        (if(null? vars)
+            '()
+            `((set! ,(car vars) ,(car vals)) ,@(pair-up-vars-and-vals (cdr vars) (cdr vals))))))
+
+(define init-vals-to-false
+    (lambda (vals)
+	(if (null? vals)
+            vals
+            `(#f ,@(init-vals-to-false (cdr vals))))))
+	
+(define letrec-macro-expander
+    (compose-patterns
+        (pattern-rule
+            '(letrec)
+            (throw-error))
+            
+        (pattern-rule
+            '(letrec ,(? 'arguements))
+            (lambda (arguements)
+                error))
+            
+        (pattern-rule
+            `(letrec ,(? 'arguements) ,(? 'body) . ,(? 'next-body))
+            (lambda (arguements body next-body)
+                (let ((vars (let-variables arguements))
+                    (vals (let-values arguements)))
+		    (let ((vars-and-vals (pair-up-vars-and-vals vars vals))
+                        (vals (init-vals-to-false vals)))
+                        (if (not (duplicate-variables? vars))
+                            ((lambda () (parse `((lambda ,vars (begin ,@vars-and-vals ((lambda () ,body ,@next-body)))) ,@vals))))
+                            error)))))))
+
+; ####################################### Let* #######################################
+            
+(define let-star-macro-expander
+    (compose-patterns
+        (pattern-rule
+            '(let*)
+            (throw-error))
+		
+        (pattern-rule
+            '(let* ,(? 'arguements))
+            (lambda (arguements)
+                error))
+		
+        (pattern-rule
+            `(let* ,(? 'arguements) ,(? 'body) . ,(? 'next-body))
+            (lambda (arguements body next-body)
+		(if(> (length arguements) 1)
+                    (do-parse `(let ,(list (car arguements)) (let* ,(cdr arguements) ,body ,@next-body)))
+                    (do-parse `(let ,arguements ,body ,@next-body)))))))
+                
+; ####################################### Cond #######################################
+
+(define append-action
+    (lambda (action)
+        (append '(begin) action)))
+
+(define cond-macro-expander
+    (compose-patterns	
+	(pattern-rule 
+            `(cond)
+	    (throw-error))
+			
+        (pattern-rule
+            `(cond (,(? 'condition) . ,(? 'action)))
+	    (lambda (condition action)
+                (if (list? action)
+                    (if (eq? 'else condition)
+                        (parse `,(append-action action))
+                        (parse `(if ,condition ,(append-action action))))
+                    (if (eq? 'else condition)
+                        (parse `(action))
+                        (parse `(if ,condition ,action))))))
+
+	(pattern-rule
+            `(cond (,(? 'condition) . ,(? 'action)) . ,(? 'next-condition))
+            (lambda (condition action next-condition)
+                (if (list? action)
+                    (do-parse `(if ,condition ,(append-action action) (cond ,@next-condition)))
+                    (do-parse `(if ,condition ,action (cond ,@next-condition))))))))
+
+; ####################################### Parse #######################################
 
 (define parse
-  (let ((run
-  (compose-patterns
-    ;variables 3.1.2
-    (pattern-rule
-        `(? 'key var?)
-        (lambda (key)
-            '(var key)));??????????
-    ;if with 2 args
-    (pattern-rule 
-      `(if ,(? 'test) ,(? 'then))
-       (lambda (test then)
-      `(if3 ,(run test) ,(run then) (const ,(void)))))
-    ;if with 3 args
-    (pattern-rule 
-      `(if ,(? 'test) ,(? 'then) ,(? 'else))
-       (lambda (test then else)
-      `(if3 ,(run test) ,(run then) ,(run else))))
-    ;or 3.1.4
-    (pattern-rule
-        '(or ,(? 'arg1) . , (? 'other-args))
-        (lambda (arg1 other-args)
-        (run `(begin ,arg1 ,@other-args))))
-    ;let* with no defined bindings
-    (pattern-rule
-      `(let* () ,(? 'body) . ,(? 'other-bodies))
-      (lambda (body other-bodies)
-      (run `(begin ,body ,@other-bodies))))
-    ;let*
-    (pattern-rule
-      `(let* ((,(? 'key var?) ,(? 'value)) . ,(? 'other-bindings)) ,(? 'body))
-      (lambda (key value other-bindings body)
-      `(let (,(run key) ,(run value))
-      ,(run (list 'let* other-bindings body)))))
-    ;MIT define 3.1.16
-    (pattern-rule
-      `(define (,(? 'define-first-var  var?) . ,(? 'other-vars)) ,(? 'expr))
-      (lambda (define-first-var other-vars expr)
-      	(run (list 'define define-first-var '( 'lambda '( other-vars ') expr)))))
-    ;regular define 3.1.16
-    (pattern-rule
-      `(define ,(? 'define-var var?) ,(? 'expr))
-    (lambda (define-var expr)
-      `(define '(var define-var) ,(run expr))))
-    ;assignments 3.1.17
-    (pattern-rule
-      `(set! ,(? 'set-var var?) ,(? 'expr))
-    (lambda (set-var expr)
-      `(set '(var set-var) ,(run expr))))
-  (lambda (sexpr)
-  (run sexpr (lambda () '(this is what happens when the tag
-  parser fails to match the input))))))
-
+    (lambda (sexpr)
+        (let ((expr (compose-patterns	
+                        const-record
+                        variable-record
+                        condition-record
+                        or-record
+                        lambda-record
+                        define-record
+                        set-record
+                        applic-record
+                        seq-record
+                        and-macro-expander
+                        let-macro-expander
+                        letrec-macro-expander
+                        let-star-macro-expander
+                        cond-macro-expander
+                        quasi-quote-record)))
+	
+            (expr sexpr (throw-error)))))
+            
+(define tag-parser parse)
