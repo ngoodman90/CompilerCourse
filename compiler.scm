@@ -1455,11 +1455,11 @@
 (define lambda-tail
   (lambda (pe)
     (cond ((same-op? pe) (same-op pe))
-          ((equal? 'if3 (car pe)) `(if3 ,(annotate-tc (cadr pe)) ,(lambda-tail (caddr pe)) ,(lambda-tail (cadddr pe))))
-          ((equal? 'or (car pe)) `(or (,@(car (tc-helper (cdadr pe) (caadr pe) #t)) 
-                                       ,@(lambda-tail (cadr (tc-helper (cdadr pe) (caadr pe) #t))))))
           ((equal? 'applic (car pe)) `(tc-applic ,(annotate-tc (cadr pe)) ,(map annotate-tc (caddr pe))))
           ((equal? 'seq (car pe)) `(seq ,`(,@(map annotate-tc (car (tc-helper (cdadr pe) (caadr pe) #t)))
+          ((equal? 'or (car pe)) `(or (,@(car (tc-helper (cdadr pe) (caadr pe) #t)) 
+                                       ,@(lambda-tail (cadr (tc-helper (cdadr pe) (caadr pe) #t))))))
+          ((equal? 'if3 (car pe)) `(if3 ,(annotate-tc (cadr pe)) ,(lambda-tail (caddr pe)) ,(lambda-tail (cadddr pe))))
                                                  ,@(lambda-tail (cadr (tc-helper (cdadr pe) (caadr pe) #t))))))
           (else `(,(lambda-tail (car pe)))))
     ))
@@ -1468,11 +1468,14 @@
 (define annotate-tc
   (lambda (pe)
     (cond ((same-op? pe) (same-op pe))
-          ((equal? 'if3 (car pe)) `(if3 ,(annotate-tc (cadr pe)) ,(annotate-tc (caddr pe)) ,(annotate-tc (cadddr pe))))
-          ((equal? 'or (car pe)) `(or (,@(car (tc-helper (cdadr pe) (caadr pe) #t)) 
-                                       ,@(annotate-tc (cadr (tc-helper (cdadr pe) (caadr pe) #t))))))
+          
+          
           ((equal? 'applic (car pe)) `(applic ,(annotate-tc (cadr pe)) ,(map annotate-tc (caddr pe))))
           ((equal? 'seq (car pe)) `(seq ,(map annotate-tc (cadr pe))))
+          ((equal? 'or (car pe)) `(or (,@(car (tc-helper (cdadr pe) (caadr pe) #t)) 
+                                       ,@(annotate-tc (cadr (tc-helper (cdadr pe) (caadr pe) #t))))))
+          ((equal? 'if3 (car pe)) `(if3 ,(annotate-tc (cadr pe)) 
+                                        ,(annotate-tc (caddr pe)) ,(annotate-tc (cadddr pe))))
           (else `(,(annotate-tc (car pe)))))
 ))
 
