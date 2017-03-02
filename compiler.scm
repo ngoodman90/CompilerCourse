@@ -2,9 +2,9 @@
 ; Yuval Har Zahav   201408143
 ; Noam Goodman      301364329
 
-(load "~/Downloads/pc.scm")
-(load "~/Downloads/pattern-matcher.scm") 
-(load "~/Downloads/qq.scm")
+(load "pc.scm")
+(load "pattern-matcher.scm") 
+(load "qq.scm")
 
 ; ####################################### Useful Lambdas #######################################
 
@@ -1298,17 +1298,17 @@
     (lambda (func var expr)
         (or (func var (car expr)) (func var (cdr expr)))))
         
-(define lambda-var-condition?
+(define lambda-simple-condition?
     (lambda (var expr)
-        (and (equal? 'lambda-var (car expr)) (equal? var (cadr expr)))))
+        (and (equal? 'lambda-simple (car expr)) (member var (cadr expr)))))
         
 (define lambda-opt-condition?
     (lambda (var expr)
         (and (equal? 'lambda-opt (car expr)) (or (member var (cadr expr)) (equal? var (caddr expr))))))
         
-(define lambda-simple-condition?
+(define lambda-var-condition?
     (lambda (var expr)
-        (and (equal? 'lambda-simple (car expr)) (member var (cadr expr)))))
+        (and (equal? 'lambda-var (car expr)) (equal? var (cadr expr)))))
         
 (define inner-member-to-bound?
     (lambda (var expr)
@@ -1316,37 +1316,40 @@
             ((not-pair-or-null? expr) #f)
             ((equal? (car expr) 'const) #f)
             ((member var expr) #t)
-            ((lambda-var-condition? var expr) #f)
-            ((lambda-opt-condition? var expr) #f)
             ((lambda-simple-condition? var expr) #f)
-            (else (loop inner-member-to-bound? var expr)))))    
-
+            ((lambda-opt-condition? var expr) #f)
+            ((lambda-var-condition? var expr) #f)
+            (else (loop inner-member-to-bound? var expr)))))
+            
 (define to-bound?
     (lambda (expr var)
         (cond ((not-pair-or-null? expr) #f)
-                ((lambda-var-condition? var expr) #f)
-                ((lambda-opt-condition? var expr) #f)
-                ((lambda-simple-condition? var expr) #f)
-                (else (loop to-bound? var expr)))))
-
+            ((equal? 'lambda-simple (car expr))
+                (and (inner-member-to-bound? var (caddr expr)) (not (member var (cadr expr)))))
+            ((equal? 'lambda-opt (car expr))
+                (and (inner-member-to-bound? var (cadddr expr)) (not (or (member var (cadr expr)) (equal? var (caddr expr))))))
+            ((equal? 'lambda-var (car expr))
+                (and (inner-member-to-bound? var (caddr expr)) (not (equal? var (cadr expr)))))
+            (else (loop to-bound? var expr)))))
+            
 (define variable-to-read?
     (lambda (expr var)
         (cond ((equal? var expr) #t)
-                ((not-pair-or-null? expr) #f)
-                ((equal? (car expr) 'const) #f)
-                ((equal? (car expr) 'set) (variable-to-read? (cddr expr) var))
-                ((lambda-var-condition? var expr) #f)
-                ((lambda-opt-condition? var expr) #f)
-                ((lambda-simple-condition? var expr) #f)
-                (else (loop variable-to-read? var expr)))))
+            ((not-pair-or-null? expr) #f)
+            ((equal? (car expr) 'const) #f)
+            ((equal? (car expr) 'set) (variable-to-read? (cddr expr) var))
+            ((lambda-simple-condition? var expr) #f)
+            ((lambda-opt-condition? var expr) #f)
+            ((lambda-var-condition? var expr) #f)
+            (else (loop variable-to-read? var expr)))))
 
 (define variable-to-write?
     (lambda (expr var)
         (cond ((not-pair-or-null? expr) #f)
             ((and (equal? (car expr) 'set) (equal? (cadadr expr) var)) #t)
-            ((lambda-var-condition? var expr) #f)
-            ((lambda-opt-condition? var expr) #f)
             ((lambda-simple-condition? var expr) #f)
+            ((lambda-opt-condition? var expr) #f)
+            ((lambda-var-condition? var expr) #f)
             (else (loop variable-to-write? var expr)))))
 
 (define remove
@@ -1368,12 +1371,12 @@
             ((and (equal? (car expr) 'var) (member (cadr expr) list-vars)) `(box-get ,expr))
             ((and (equal? (car expr) 'set) (equal? (caadr expr) 'var) (member (cadadr expr) list-vars)) 
             `(box-set ,(cadr expr) ,@(inner-boxing (cddr expr) list-vars)))
-            ((equal? 'lambda-var (car expr))  
-            `(,(car expr) ,(cadr expr) ,(inner-boxing (caddr expr) (remove-parts list-vars (list (cadr expr))))))
-            ((equal? 'lambda-opt (car expr))
-            `(,(car expr) ,(cadr expr) ,(caddr expr) ,(inner-boxing (cadddr expr) (remove-parts list-vars (cons (caddr expr) (cadr expr))))))
             ((equal? 'lambda-simple (car expr))  
             `(,(car expr) ,(cadr expr) ,(inner-boxing (caddr expr) (remove-parts list-vars (cadr expr)))))
+            ((equal? 'lambda-opt (car expr))
+            `(,(car expr) ,(cadr expr) ,(caddr expr) ,(inner-boxing (cadddr expr) (remove-parts list-vars (cons (caddr expr) (cadr expr))))))
+            ((equal? 'lambda-var (car expr))
+            `(,(car expr) ,(cadr expr) ,(inner-boxing (caddr expr) (remove-parts list-vars (list (cadr expr))))))
             (else `(,(inner-boxing (car expr) list-vars) ,@(inner-boxing (cdr expr) list-vars))))))
 
 (define perform-boxing?
@@ -1409,14 +1412,14 @@
 (define box-set
     (lambda (expr)
         (cond   ((not-pair-or-null? expr) expr)                                                                                 ; do nothing
-                ((and (equal? 'lambda-var (car expr)) (< 2 (length expr)) (not (null? (car (lambda-var-boxing expr)))))         ; lambda-var
-                 (begin (set! boxed-variables (lambda-var-boxing expr))
+                ((and (equal? 'lambda-simple (car expr)) (< 2 (length expr)) (not (null? (car (lambda-simple-boxing expr)))))   ; lambda-simple
+                 (begin (set! boxed-variables (lambda-simple-boxing expr))
                         `(,(car expr) ,(cadr expr) (seq (,@(car boxed-variables) ,@(lambda-box-set boxed-variables))))))
                 ((and (equal? 'lambda-opt (car expr)) (< 2 (length expr)) (not (null? (car (lambda-opt-boxing expr)))))         ; lambda-opt
                  (begin (set! boxed-variables (lambda-opt-boxing expr)) 
                         `(,(car expr) ,(cadr expr) ,(caddr expr) (seq (,@(car boxed-variables) ,@(lambda-box-set boxed-variables))))))
-                ((and (equal? 'lambda-simple (car expr)) (< 2 (length expr)) (not (null? (car (lambda-simple-boxing expr)))))   ; lambda-simple
-                 (begin (set! boxed-variables (lambda-simple-boxing expr))
+                ((and (equal? 'lambda-var (car expr)) (< 2 (length expr)) (not (null? (car (lambda-var-boxing expr)))))         ; lambda-var
+                 (begin (set! boxed-variables (lambda-var-boxing expr))
                         `(,(car expr) ,(cadr expr) (seq (,@(car boxed-variables) ,@(lambda-box-set boxed-variables))))))
                 (else `(,(box-set (car expr)) ,@(box-set (cdr expr)))))))                                                       ; everything else
 
