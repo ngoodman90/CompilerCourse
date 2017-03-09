@@ -1,3 +1,6 @@
+#lang racket
+
+
 
 ; Yuval Har Zahav   201408143
 ; Noam Goodman      301364329
@@ -206,7 +209,7 @@
     done))
 
 (define <NamedChar>
-    (new	
+    (new  
         (*parser <ignore>)
         
         (*parser (word "lambda"))
@@ -268,7 +271,7 @@
         (*pack (lambda (n) (integer->char n)))
         
         (*caten 2)
-        (*pack-with (lambda (pre c) `(,@c)))	
+        (*pack-with (lambda (pre c) `(,@c)))  
     done))
 
 (define <Char>
@@ -406,7 +409,7 @@
         (*pack (lambda (_) #\tab))
         (*parser (word-ci "\\f"))
         (*pack (lambda (_) #\page))
-        (*parser (word-ci "\\n"))	
+        (*parser (word-ci "\\n")) 
         (*pack (lambda (_) #\newline))
         (*parser (word-ci "\\r"))
         (*pack (lambda (_) #\return))
@@ -471,14 +474,14 @@
 ; ####################################### Math Operations & Infix Expressions #######################################
 
 (define <PowerSymbol>
-    (new		
+    (new    
         (*parser (char #\^))
         (*parser (word "**"))
         (*disj 2)
     done))
 
 (define <MathOperationSymbol>
-    (new		
+    (new    
         (*parser (char #\+))
         (*parser (char #\-))
         (*parser (char #\*))
@@ -488,7 +491,7 @@
     done))
     
 (define <MathOperationSymbolWithoutDivision>
-    (new		
+    (new    
         (*parser <MathOperationSymbol>)
         (*parser (char #\/))
         *diff
@@ -523,7 +526,7 @@
     done))
 
 (define <InfixSexprEscape>
-    (new		
+    (new    
         (*parser <InfixPrefixExtensionPrefix>)
         (*delayed (lambda () <Sexpr>))
         (*caten 2)
@@ -618,7 +621,7 @@
     done))
 
 (define <InfixPower>
-    (new 		
+    (new    
         (*parser <InfixExpressionWithoutMath>)                ; InfixExprWithoutMath
         
         (*parser (word "**"))
@@ -643,7 +646,7 @@
     done))
 
 (define <InfixMultiplicationOrDivision>
-    (new 		
+    (new    
         (*parser <BeginingOfInfixMultiplicationOrDivision>)       ; InfixPower / - InfixPower
 
         (*parser (char #\*))
@@ -657,7 +660,7 @@
         (*parser (char #\/))
         (*disj 2)
         (*parser <InfixPower>)
-        (*caten 2) *star				                    ; ( *// InfixMulDiv )*
+        (*caten 2) *star                            ; ( *// InfixMulDiv )*
 
         (*caten 2)
         (*pack-with (lambda (h t) (create-mul-div-list h t)))
@@ -835,16 +838,16 @@
 
 (define constant?
     (lambda (c)
-	(or (number? c) (char? c) (boolean? c) (string? c) (eq? c (void)))))
+  (or (number? c) (char? c) (boolean? c) (string? c) (eq? c (void)))))
 
 (define const-record
     (compose-patterns
-	(pattern-rule 
+  (pattern-rule 
             (? 'expr constant?)
             (lambda (expr) (list 'const expr)))
             
         (pattern-rule 
-	    `(quote ,(? 'expr))
+      `(quote ,(? 'expr))
             (lambda (expr) (list 'const expr)))))
 
 ; ####################################### Variables #######################################
@@ -862,7 +865,7 @@
 
 (define variable?
     (lambda (w)
-	(and (symbol? w) (unreserved-word? w))))
+  (and (symbol? w) (unreserved-word? w))))
 
 (define variable-record
     (pattern-rule 
@@ -884,8 +887,8 @@
             '(if ,(? 'test))
             (lambda (test) 
                 error))
-		   
-	(pattern-rule
+       
+  (pattern-rule
             `(if ,(? 'test) ,(? 'dit))
             (lambda (test dit) 
                 `(if3 ,(do-parse test) ,(do-parse dit) ,(do-parse (void)))))
@@ -896,7 +899,7 @@
                 `(if3 ,(do-parse test) ,(do-parse dit) ,(do-parse dif))))))
             
 ; ####################################### Disjunctions #######################################
-	
+  
 (define parse-list
     (lambda (lst)
         (if (null? lst)
@@ -904,20 +907,20 @@
             (if (null? (cdr lst))
                 (list (do-parse (car lst)))
                 `(,(do-parse (car lst)) ,@(parse-list (cdr lst)))))))
-		
+    
 (define or-record
     (compose-patterns
         (pattern-rule 
             `(or)
             (lambda () 
                 (do-parse #f)))
-	
-	(pattern-rule 
+  
+  (pattern-rule 
             `(or ,(? 'expr))
             (lambda (expr) 
                 (do-parse expr)))
    
-	(pattern-rule 
+  (pattern-rule 
             `(or ,(? 'expr) . ,(? 'expr-lst))
             (lambda (expr expr-lst) 
                 `(or (,(do-parse expr) ,@(parse-list expr-lst)))))))
@@ -946,17 +949,17 @@
 (define lambda-with-optional-arguements?
     (lambda (pair)
         (and (pair? pair) (not (duplicate-variables? pair)))))
-		
+    
 (define get-mandatory-variables
     (lambda (pair)
         (if (pair? pair)
             `(,(car pair) ,@(get-mandatory-variables (cdr pair)))
             '())))
-		
+    
 (define get-v-rest
     (lambda (pair)
         (cdr (last-pair pair))))
-		
+    
 (define variadic-lambda?
     (lambda (lst)
         (if (variable? lst)
@@ -973,35 +976,35 @@
             '(lambda . ,(? 'expr-lst))
             (lambda (expr-lst) error))
             
-	(pattern-rule                                                                  ; lambda-simple
+  (pattern-rule                                                                  ; lambda-simple
             `(lambda ,(? 'vars regular-lambda?) ,(? 'expr) . ,(? 'expr-lst))
             (lambda (vars expr expr-lst)
                 `(lambda-simple ,vars ,(do-parse `(begin ,expr ,@expr-lst)))))
-		   
-	(pattern-rule                                                                  ; lambda-opt
+       
+  (pattern-rule                                                                  ; lambda-opt
             `(lambda ,(? 'vars lambda-with-optional-arguements?) ,(? 'expr) . ,(? 'expr-lst))
             (lambda (vars expr expr-lst)
                 `(lambda-opt ,(get-mandatory-variables vars) ,(get-v-rest vars) ,(do-parse `(begin ,expr ,@expr-lst)))))
 
-	(pattern-rule                                                                  ; lambda-var
+  (pattern-rule                                                                  ; lambda-var
             `(lambda ,(? 'vars variadic-lambda?) ,(? 'expr) . ,(? 'expr-lst))
             (lambda (vars expr expr-lst)
                 `(lambda-var ,vars ,(do-parse `(begin ,expr ,@expr-lst)))))))
-		
+    
 ; ####################################### Define #######################################
-		
+    
 (define define-record
     (compose-patterns
-	(pattern-rule                                                                  ; Regular Define
+  (pattern-rule                                                                  ; Regular Define
             `(define ,(? 'var variable?) . ,(? 'expr))
             (lambda (var expr)
                 `(def ,(do-parse var) ,(do-parse (cons 'begin expr)))))
-	
-	(pattern-rule                                                                  ; MIT Define
+  
+  (pattern-rule                                                                  ; MIT Define
             `(define ,(? 'var pair?) . ,(? 'expr))
             (lambda (var expr) 
                     `(def ,(do-parse (car var)) ,(do-parse `(lambda ,(cdr var) ,(cons 'begin expr))))))))
-		   
+       
 ; ####################################### Assignments #######################################
 
 (define set-record
@@ -1015,7 +1018,7 @@
 (define applic-record
     (pattern-rule
         `(,(? 'expr unreserved-word?) . ,(? 'expr-lst))
-	(lambda (expr expr-lst)
+  (lambda (expr expr-lst)
             `(applic ,(do-parse expr) ,(parse-list expr-lst)))))
 
 ; ####################################### Sequences #######################################
@@ -1040,17 +1043,17 @@
             
 (define seq-record
     (compose-patterns  
-	(pattern-rule 
+  (pattern-rule 
             `(begin)
             (lambda ()
                 (do-parse (void))))
 
-	(pattern-rule 
+  (pattern-rule 
             `(begin ,(? 'expr))
-	     (lambda (expr)
+       (lambda (expr)
                 (do-parse expr)))
-		  
-	(pattern-rule
+      
+  (pattern-rule
             `(begin ,(? 'expr) . ,(? 'expr-lst))
             (lambda (expr expr-lst)
                 (let ((new-expr-lst (organize-begin-list expr-lst)))
@@ -1066,12 +1069,12 @@
             `(,(string->symbol "quasiquote") ,(? 'qq))
             (lambda (qq)
                 (parse (expand-qq qq))))))
-		    
+        
 ; ####################################### And #######################################
-		    
+        
 (define and-macro-expander
-    (compose-patterns	
-	(pattern-rule 
+    (compose-patterns 
+  (pattern-rule 
             `(and)
             (lambda () 
                 (do-parse #t)))
@@ -1082,14 +1085,14 @@
                 (do-parse expr)))
                 
         (pattern-rule 
-	  `(and ,(? 'expr1) ,(? 'expr2))
-	      (lambda (expr1 expr2) 
-		 (do-parse `(if ,expr1 ,expr2 #f))))
+    `(and ,(? 'expr1) ,(? 'expr2))
+        (lambda (expr1 expr2) 
+     (do-parse `(if ,expr1 ,expr2 #f))))
         
         (pattern-rule 
-	  `(and ,(? 'expr1) . ,(? 'expr2))
-	      (lambda (expr1 expr2)
-		(do-parse `(if ,expr1 (and ,(car expr2) ,@(cdr expr2)) #f))))))
+    `(and ,(? 'expr1) . ,(? 'expr2))
+        (lambda (expr1 expr2)
+    (do-parse `(if ,expr1 (and ,(car expr2) ,@(cdr expr2)) #f))))))
 
 ; ####################################### Let #######################################
 
@@ -1098,7 +1101,7 @@
         (if (null? lst)
             '()
             `(,(caar lst) ,@(let-variables(cdr lst))))))
-	  
+    
 (define let-values
     (lambda (lst)
         (if (null? lst)
@@ -1121,7 +1124,7 @@
             (lambda (arguements body next-body)
                 (let ((vars (let-variables arguements))
                     (vals (let-values arguements)))
-		    (if (not (duplicate-variables? vars))
+        (if (not (duplicate-variables? vars))
                         ((lambda () (parse `((lambda ,vars ,body ,@next-body) ,@vals))))
                         error))))))
 
@@ -1135,10 +1138,10 @@
 
 (define init-vals-to-false
     (lambda (vals)
-	(if (null? vals)
+  (if (null? vals)
             vals
             `(#f ,@(init-vals-to-false (cdr vals))))))
-	
+  
 (define letrec-macro-expander
     (compose-patterns
         (pattern-rule
@@ -1155,7 +1158,7 @@
             (lambda (arguements body next-body)
                 (let ((vars (let-variables arguements))
                     (vals (let-values arguements)))
-		    (let ((vars-and-vals (pair-up-vars-and-vals vars vals))
+        (let ((vars-and-vals (pair-up-vars-and-vals vars vals))
                         (vals (init-vals-to-false vals)))
                         (if (not (duplicate-variables? vars))
                             ((lambda () (parse `((lambda ,vars (begin ,@vars-and-vals ((lambda () ,body ,@next-body)))) ,@vals))))
@@ -1168,16 +1171,16 @@
         (pattern-rule
             '(let*)
             (throw-error))
-		
+    
         (pattern-rule
             '(let* ,(? 'arguements))
             (lambda (arguements)
                 error))
-		
+    
         (pattern-rule
             `(let* ,(? 'arguements) ,(? 'body) . ,(? 'next-body))
             (lambda (arguements body next-body)
-		(if(> (length arguements) 1)
+    (if(> (length arguements) 1)
                     (do-parse `(let ,(list (car arguements)) (let* ,(cdr arguements) ,body ,@next-body)))
                     (do-parse `(let ,arguements ,body ,@next-body)))))))
                 
@@ -1188,14 +1191,14 @@
         (append '(begin) action)))
 
 (define cond-macro-expander
-    (compose-patterns	
-	(pattern-rule 
+    (compose-patterns 
+  (pattern-rule 
             `(cond)
-	    (throw-error))
-			
+      (throw-error))
+      
         (pattern-rule
             `(cond (,(? 'condition) . ,(? 'action)))
-	    (lambda (condition action)
+      (lambda (condition action)
                 (if (list? action)
                     (if (eq? 'else condition)
                         (parse `,(append-action action))
@@ -1204,7 +1207,7 @@
                         (parse `(action))
                         (parse `(if ,condition ,action))))))
 
-	(pattern-rule
+  (pattern-rule
             `(cond (,(? 'condition) . ,(? 'action)) . ,(? 'next-condition))
             (lambda (condition action next-condition)
                 (if (list? action)
@@ -1215,7 +1218,7 @@
 
 (define parse
     (lambda (sexpr)
-        (let ((expr (compose-patterns	
+        (let ((expr (compose-patterns 
                      const-record
                      variable-record
                      condition-record
@@ -1252,7 +1255,7 @@
                         (if (eq? (caar var) 'def)
                             (func (cons (car var) expr1) expr2)
                             (if (eq? (caar var) 'seq)
-			        (perform-define-split
+              (perform-define-split
                                     (cadar var)
                                     (lambda (expr3 expr4)
                                             (func (append expr3 expr1)
@@ -1446,19 +1449,19 @@
     (or (null? expr) (not (pair? expr)))))
     
 (define remove-applic-expr-helper?
-	(lambda (expr)
-		(and 
-			(pair? expr) 
-			(lambda-simple? expr) 
-			(= 3 (length expr)) 
-			(null? (cadr expr)))
-		))
+  (lambda (expr)
+    (and 
+      (pair? expr) 
+      (lambda-simple? expr) 
+      (= 3 (length expr)) 
+      (null? (cadr expr)))
+    ))
 
 (define remove-applic-expr?
   (lambda (expr)
     (and 
-    	(equal? 'applic (car expr)) 
-    	(remove-applic-expr-helper? (cadr expr)))
+      (equal? 'applic (car expr)) 
+      (remove-applic-expr-helper? (cadr expr)))
     ))
 
 (define remove-applic-lambda-nil
@@ -1572,17 +1575,17 @@
     (member (car pe) (list 'set 'box-set))))
 
 (define same-op?
-	(lambda (pe)
-		(or (dont-care? pe) (lambda-expr? pe) (definition? pe) (set-op? pe) (equal? 'box (car pe)))))
+  (lambda (pe)
+    (or (dont-care? pe) (lambda-expr? pe) (definition? pe) (set-op? pe) (equal? 'box (car pe)))))
 
 (define same-op
-	(lambda (pe)
-		(cond ((dont-care? pe) pe)
-					((lambda-expr? pe) (lambda-tail-helper pe))
-					((definition? pe) `(,(car pe) ,(cadr pe) ,(annotate-tc (caddr pe))))
+  (lambda (pe)
+    (cond ((dont-care? pe) pe)
+          ((lambda-expr? pe) (lambda-tail-helper pe))
+          ((definition? pe) `(,(car pe) ,(cadr pe) ,(annotate-tc (caddr pe))))
           ((set-op? pe) `(,(car pe) ,(cadr pe) ,@(annotate-tc (cddr pe))))
           ((equal? 'box (car pe)) `(box ,@(annotate-tc (cdr pe)))))
-		))
+    ))
 
 (define lambda-tail
   (lambda (pe)
@@ -1617,3 +1620,515 @@
                 (box-set
                     (remove-applic-lambda-nil
                         (eliminate-nested-defines (parse sexpr))))))))
+
+
+
+
+; ######################################### PROJECT #################################################
+
+; ######################################## HELPER FUNCTIONS #########################################
+
+(define code "")
+
+(define boolean->string
+  (lambda (bool)
+    (if bool "1" "0")))
+
+(define add-to-code
+  (lambda (code-section)
+    (set! code (string-append code code-section))))
+
+(define add-line-to-code
+  (lambda (line)
+      (add-to-code (string-append line ";" (string #\newline)))))
+
+(define add-label-to-code
+  (lambda (label)
+    (set! code (string-append code label ":" (string #\newline)))))
+
+(define my-map-helper
+  (lambda (proc lst1 lst2)
+    (if (null? lst1) lst2 
+                     (my-map-helper proc (append lst2 (list (proc (car lst1)))) (cdr lst1)))))
+
+(define my-map
+  (lambda (proc lst)
+    (my-map helper proc lst '())))
+
+
+; Arithmetic instruction
+
+
+(define ADD
+  (lambda (dest stc)
+    (string-append "ADD(" dest "," src ")")))
+
+(define DECR
+  (lambda (dest)
+    (string-append "DECR(" dest ")")))
+
+(define DIV
+  (lambda (dest src)
+    (string-append "DIV(" dest "," src ")")))
+
+(define INCR
+  (lambda (dest src)
+    (string-append "INCR(" dest ")")))
+
+(define MUL
+  (lambda (dest src)
+    (string-append "MUL(" dest "," src ")")))
+
+(define REM
+  (lambda (dest src)
+    (string-append "REM(" dest "," src ")")))
+
+(define SUB
+  (lambda (dest src)
+    (string-append "SUB(" dest "," src ")")))
+
+
+; Logical instructions
+
+
+(define AND
+  (lambda (dest src)
+    (string-append "AND(" dest "," src ")")))
+
+(define NEG
+  (lambda (dest)
+    (string-append "NEG(" dest ")")))
+
+(define OR
+  (lambda (dest src)
+    (string-append "OR(" dest "," src ")")))
+
+(define SHL
+  (lambda (dest src)
+    (string-append "SHL(" dest "," src ")")))
+
+(define SHR
+  (lambda (dest src)
+    (string-append "SHR(" dest "," src ")")))
+
+(define XOR
+  (lambda (dest src)
+    (string-append "XOR(" dest "," src ")")))
+
+
+; Stack
+
+
+(define DROP
+  (lambda (count)
+    (string-append "DROP(" count ")")))
+
+(define POP
+  (lambda (dest)
+    (string-append "POP(" dest ")")))
+
+(define PUSH
+  (lambda (src)
+    (string-append "PUSH(" src ")")))
+
+
+; Comparison
+
+
+(define CMP
+  (lambda (op1 op2)
+    (string-append "CMP(" op1 "," op2 ")")))
+
+
+; Control
+
+(define CALL
+  (lambda (dest)
+    (string-append "CALL(" dest ")")))
+
+(define CALLA
+  (lambda (addr)
+    (string-append "CALLA(" addr ")")))
+
+(define JUMP
+  (lambda (dest)
+    (string-append "JUMP(" dest ")")))
+
+(define JUMP_EQ
+  (lambda (dest)
+    (string-append "JUMP_EQ(" dest ")")))
+
+(define JUMP_GE
+  (lambda (dest)
+    (string-append "JUMP_GE(" dest ")")))
+
+(define JUMP_GT
+  (lambda (dest)
+    (string-append "JUMP_GT(" dest ")")))
+
+(define JUMP_LE
+  (lambda (dest)
+    (string-append "JUMP_LE(" dest ")")))
+
+(define JUMP_LT
+  (lambda (dest)
+    (string-append "JUMP_LT(" dest ")")))
+
+(define JUMP_NE
+  (lambda (dest)
+    (string-append "JUMP_NE(" dest ")")))
+
+
+; IO
+
+
+(define IN
+  (lambda (dest port)
+    (string-append "IN(" dest "," port ")")))
+
+(define OUT
+  (lambda (port src)
+    (string-append "OUT(" port "," src ")")))
+
+
+; Register operations
+
+
+(define MOV
+  (lambda (dest src)
+    (string-append ("MOV(" dest "," src ")"))))
+
+
+; Addressing modes
+
+
+(define IMM
+  (lambda (const)
+    (string-append "IMM(" const ")")))
+
+(define IND
+  (lambda (src)
+    (string-append "IND(" src ")")))
+
+(define INDD
+  (lambda (src const)
+    (string-append "INDD(" src "," const ")")))
+
+(define STACK
+  (lambda (n)
+    (string-append "STACK(" n ")")))
+
+(define FPARG
+  (lambda (n)
+    (string-append "FPARG(" n ")")))
+
+
+; system.lib
+
+(define MALLOC
+  (lambda (size dest)
+    (add-line-to-code (PUSH size))
+    (add-line-to-code (CALL "MALLOC"))
+    (add-line-to-code (DROP "1"))
+    (add-line-to-code (MOV dest "RO"))))
+
+
+; Labels
+
+
+(define label-index 0)
+
+(define increment-label-index
+  (set! label-index (+ 1 label-index)))
+
+(define give-label-index
+  (lambda (label-name)
+    (begin (increment-label-index) (string-append label-name (number->String label-index)))))
+
+
+
+
+; Loop
+
+(define gen-loop
+  (lambda (iter instruction)
+    (let ((loop-start (give-label-index "LOOP_START_"))
+         ((loop-exit (give-label-index "LOOP_EXIT_"))))
+    (add-line-to-code (PUSH "R8"))
+    (add-line-to-code (MOV "R8" iter))
+    (add-label-to-code loop-start)
+    (add-line-to-code (CMP "R8" "0"))
+    (add-line-to-code (JUMP_EQ loop-exit))
+    (add-line-to-code (PUSH "R8"))
+    (instruction)
+    (add-line-to-code (POP "R8"))
+    (add-line-to-code (DECR "R8"))
+    (add-line-to-code (JUMP loop-start))
+    (add-label-to-code loop-exit)
+    (add-line-to-code (POP "R8")))))
+
+
+
+
+
+
+
+; ######################################### TABLES ##################################################
+
+
+;initial values
+(define global-table (list))
+(define fvar-index 0)
+
+(define add-fvar-to-global-table
+    (lambda (fvar)
+        (set! global-table (cons (list fvar-index fvar) global-table))))
+
+(define increment-fvar-index
+    (lambda ()
+        (set! fvar-index (+ 1 fvar-index))))
+
+(define find-fvars
+    (lambda (code)
+        (cond ((null-or-not-pair? code) '())
+                    ((equal? (car code) 'fvar)
+                        (begin (add-fvar-to-global-table (cadr code))
+                                     (increment-fvar-index)))
+                    (else (begin (find-fvars (car code)) (find-fvars (cdr code))))
+    )))
+
+(define sort-table-by-index
+  (lambda (table)
+    (sort (lambda (index1 index2) 
+      (< (car index1) (car index2)) table))))
+
+(define make-global-table
+  (lambda (code)
+    (begin (find-fvars code)
+           (set! global-table (sort-table-by-index global-table))
+           (MALLOC (number->string fvar-index) "R9")
+  )))
+
+(define add-rt-fvars
+  (lambda (rt-fvars)
+    (begin (map (lambda (expr)
+              (begin (add-fvar-to-global-table expr)
+                     (increment-fvar-index))) rt-fvars)
+           (set! global-table (sort-table-by-index global-table)))))
+
+(define lookup-fvar
+  (lambda (index table)
+    (number->string (cond ((null? table) "ERROR: KEY NOT FOUND IN GLOBAL TABLE")
+                          ((equal? index (cadar table)) (caar table))
+                          (else (lookup-fvar index (cdr table)))))))
+
+(define gen-fvar
+  (lambda (pe)
+    (add-line-to-code (PUSH "R1"))
+    (add-line-to-code (MOV "R1" (lookup-fvar (cadr pe))))
+    (add-line-to-code (ADD "R1" "R9"))
+    (add-line-to-code (MOV "R0" (IND "R1")))
+    (add-line-to-code (POP "R1"))))
+
+(define set-fvar
+  (lambda (pe)
+    (code-gen (caddr pe))
+    (add-line-to-code (PUSH "R1"))
+    (add-line-to-code (MOV "R1" (lookup-fvar (cadr (cadr pe)))))
+    (add-line-to-code (ADD "R1" "R9"))
+    (add-line-to-code (MOV (IND "R1") "R0"))
+    (add-line-to-code (POP "R1"))
+    (add-line-to-code (MOV "R0" "T_VOID"))))
+
+(define gen-box-get-fvar
+  (lambda (pe)
+    (add-line-to-code (PUSH "R1"))
+    (add-line-to-code (MOV "R1" (lookup-fvar (cadr pe))))
+    (add-line-to-code (ADD "R1" "R9"))
+    (add-line-to-code (MOV "R0" (IND "R1")))
+    (add-line-to-code (POP "R1"))
+    (add-line-to-code (MOV "R0" (IND "R0")))))
+
+(define def-fvar
+  (lambda (pe)
+    (code-gen (caddr pe))
+    (add-line-to-code (PUSH "R1"))
+    (add-line-to-code (MOV "R1" (lookup-fvar (cadr (cadr pe)))))
+    (add-line-to-code (ADD "R1" "R9"))
+    (add-line-to-code (MOV (IND "R1") "R0"))
+    (add-line-to-code (MOV "R0" "T_VOID"))
+    (add-line-to-code (POP "R1"))))
+
+
+
+
+
+; ########################################### CODE-GEN ###################################################
+
+
+(define code-gen 1)
+
+(define gen-make-sob-void
+  (lambda ()
+    (add-line-to-code (CALL "MAKE_SOB_VOID"))))
+
+(define gen-make-sob-integer
+  (lambda (int)
+    (begin (add-line-to-code (PUSH (IMM  (number->string (car int)))))
+           (add-line-to-code (CALL "MAKE_SOB_INTEGER"))
+           (add-line-to-code (DROP "1")))))
+
+(define gen-make-sob-fraction
+  (lambda (frac)
+    (begin (add-line-to-code (PUSH (IMM  (number->String (cadr frac)))))
+           (add-line-to-code (PUSH (IMM  (number->String (car frac)))))
+           (add-line-to-code (CALL "MAKE_SOB_FRACTION")))))
+
+(define gen-make-sob-pair
+  (lambda (pair)
+    (begin (add-line-to-code (PUSH (IMM  (number->String (cadr pair)))))
+           (add-line-to-code (PUSH (IMM  (number->String (car pair)))))
+           (add-line-to-code (CALL "MAKE_SOB_PAIR")))))
+
+(define gen-make-sob-vector
+  (lambda (vec)
+    (let ((reversed-vec (reverse vec)))
+    (begin  (map-in-order (lambda (vec-element) 
+                            (add-line-to-code (PUSH (IMM  (number->String vec-element))))) 
+                              (cdr reversed-vec))
+            (add-line-to-code (PUSH (IMM (number->String (car reversed)))))
+            (add-line-to-code (CALL "MAKE_SOB_VECTOR"))))))
+
+(define gen-make-sob-char
+  (lambda (c)
+    (begin (add-line-to-code (PUSH (IMM  (number->String (char->integer (car c))))))
+           (add-line-to-code (CALL "MAKE_SOB_CHAR")))))
+
+(define gen-make-sob-string
+  (lambda (str)
+    (let ((reversed-str (reverse-str)))
+      (begin (my-map (lambda (c) 
+          (add-line-to-code (PUSH (IMM (number->String (char->integer c)))))) (cdr reversed-str))
+             (add-line-to-code (PUSH (IMM (number->String (car reversed-str)))))
+             (add-line-to-code (CALL "MAKE_SOB_STRING"))))))
+
+(define gen-make-sob-symbol
+  (lambda (sym)
+    (begin (add-line-to-code (PUSH (IMM (number->String (car sym)))))
+           (add-line-to-code (CALL "MAKE_SOB_SYMBOL"))
+           (add-line-to-code (DROP "1")))))
+
+(define gen-make-sob-bool
+  (lambda (bool)
+    (let ((bool-val (if (car bool) 1 0)))
+        (begin (add-line-to-code (PUSH (IMM (number->String bool-val))))
+               (add-line-to-code (CALL "MAKE_SOB_BOOL"))
+               (add-line-to-code (DROP "1"))))))
+
+(define gen-make-sob-nil
+  (lambda ()
+    (add-line-to-code (CALL "MAKE_SOB_NIL"))))
+
+(define gen-make-sob-void
+  (lambda ()
+    (add-line-to-code (CALL "MAKE_SOB_VOID"))))
+
+(define gen-seq
+  (lambda (pe)
+    (my-map code-gen (cadr pe))))
+
+(define gen-if3
+  (lambda (pe)
+    (let ((if-exit (give-label-index "L_if3_exit_"))
+         ((if-else (give-label-index "L_if3_else_"))))
+     (begin (code-gen (cadr pe))
+      TODO CHANGE THIS ONCE CONST IS COMPLETE
+            (add-line-to-code (CMP "R0" (number->String (const-lookup #f const-table))))
+            (add-line-to-code (JUMP_EQ if-else))
+            (code-gen (caddr pe))
+            (add-line-to-code (JUMP if-exit))
+            (add-label-to-code if-else)
+            (code-gen (caddr (cdr pe)))
+            (add-label-to-code if-exit)))))
+
+(define gen-or
+  (lambda (pe)
+    (begin (define or-exit (give-label-index "L_or_exit_"))
+           (my-map (lambda (predicate)
+                      (begin (code-gen predicate)
+                        TODO CHANGE ONCE CONST TABLE IS COMPLETE
+                             (add-line-to-code (CMP "R0" (number->String (const-lookup #f const-table))))
+                             (add-line-to-code (JUMP_NE or-exit)))) (cadr pe))
+           (add-label-to-code or-exit))))
+
+(define gen-pvar
+  (lambda (pe)
+    (add-line-to-code (MOV "RO" (FPARG (number->string (+ 2 (caddr pe))))))))
+
+(define gen-bvar
+  (lambda (pe)
+    (add-line-to-code (MOV "R0" (FPARG "0")))
+    (add-line-to-code (MOV "R0" (INDD "R0" (number->string (caddr pe)))))
+    (add-line-to-code (MOV "R0" (INDD "R0" (number->string (cadddr pe)))))))
+
+(define gen-applic-tc
+  (lambda (pe)
+    (let ((fixed_sp (give-label-index "FIXED_SP_"))
+          (caddr-len (number->string (length (caddr pe)))))
+    (begin (add-line-to-code (CMP (FPARG "1") caddr-len))
+           (add-line-to-code (JUMP_LE fixed_sp))         
+           (add-label-to-code fixed_sp)
+           (my-map (lambda (expr)
+                    (begin (code-gen expr)
+                           (add-line-to-code (push "R0"))))
+              (reverse (caddr pe)))
+           (add-line-to-code (PUSH (IMM (number->string (length (caddr pe))))))
+           (code-gen (cadr pe))
+           (add-line-to-code (CMP (INDD "R0" "0") "T_CLOSURE"))
+           (add-line-to-code (JUMP_NE "NOT_CLOSURE"))
+           (add-line-to-code (string-append (PUSH (INDD "R0" "1")) "/*env*/"))
+           (add-line-to-code (PUSH (FPARG "-1")))
+           (add-line-to-code (MOV "R10" (FPARG "-2")))
+           (add-line-to-code (MOV "R11" (number->string (length (caddr pe)))))
+           (add-line-to-code (ADD "R11" "3"))
+           (add-line-to-code (MOV "R12" "SP"))
+           (add-line-to-code (SUB "R12" "3"))
+           (add-line-to-code (SUB "R12" (number->string (length (caddr pe)))))
+           (add-line-to-code (MOV "R13" "FP"))
+           (add-line-to-code (SUB "R13" "4"))
+           (add-line-to-code (SUB "R13" (FPARG "1")))
+           (gen-loop "R11"
+             (lambda () (begin (add-line-to-code (MOV "R14" ( "R12")))                               
+                               (add-line-to-code (MOV (STACK "R13") "R14"))
+                               (add-line-to-code (INCR "R12"))
+                               (add-line-to-code (INCR "R13")))))
+           (add-line-to-code (MOV "FP" "R1"))
+           (add-line-to-code (MOV "SP" "R13"))
+           (add-line-to-code (JUMP (string-append "*" (INDD "R0" "2"))))
+           ))))
+
+
+(define gen-lambda
+  (lambda (pe)
+    (cond ((lambda-simple? pe) (gen-lambda-simple pe))
+          ((lambda-var? pe) (gen-lambda-var pe))
+          ((lambda-opt? pe) (gen-lambda-opt pe)))
+    ))
+
+(define code-gen
+  (lambda (pe)
+    (cond ((null-or-not-pair? pe) "")
+          ((equal? 'or (car pe)) (gen-or pe));ALMOST DONE - missing const table functions
+          ((equal? 'if3 (car pe)) (gen-if3 pe));ALMOST DONE - missing const table functions
+          ((equal? 'pvar (car pe)) (gen-pvar pe));ALMOST DONE - no set or set box
+          ((equal? 'bvar (car pe)) (gen-bvar pe));ALMOST DONE - no gen-set or gen-set-box
+          ((equal? 'def (car pe)) (gen-def pe))
+          ((equal? 'box-get (car pe)) (gen-box-get pe))
+          ((equal? 'applic (car pe)) (gen-applic pe))
+          ((equal? 'tc-applic (car pe)) (gen-tc-applic pe));DONE
+          ((equal? 'const (car pe)) (gen-const pe))
+          ((equal? 'set (car pe)) (gen-set pe))
+          ((equal? 'seq (car pe)) (gen-seq pe));DONE
+          ((lambda-expr? pe) (gen-lambda pe))
+          (else (begin (code-gen (car pe)) (code-gen (cdr-pe))))
+    )))
