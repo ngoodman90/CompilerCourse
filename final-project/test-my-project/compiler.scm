@@ -2060,6 +2060,10 @@
   (lambda (label)
     (string-append label ":" (string #\newline))))
 
+(define add-to-code
+	(lambda (line)
+		(string-append line (string #\newline))))
+
 
 ; Arithmetic instruction
 
@@ -2954,141 +2958,141 @@
           (bool-t-addrs (car (Get-associate-i #t constants-table 2)))
           (bool-f-addrs (car (Get-associate-i #f constants-table 2))))
         (string-append
-        "#include <stdlib.h>" new-line
-        "#include <string.h>" new-line
-        "#include <stdio.h>" new-line
-        "#include \"arch/cisc.h\"" new-line
-        "#include \"arch/debug_macros.h.c\"" new-line
-        "#define DO_SHOW 2" new-line
-        ; The main function starts here
-        "int main()" new-line
-        "{" new-line
-        "  int i,j;"  new-line
-        "  START_MACHINE;" new-line
-        "  JUMP(CONTINUE);" new-line
-        "#include \"arch/char.lib\"" new-line
-        "#include \"arch/io.lib\"" new-line
-        "#include \"arch/math.lib\"" new-line
-        "#include \"arch/string.lib\"" new-line
-        "#include \"arch/system.lib\"" new-line
-        "#include \"arch/scheme.lib\"" new-line
-        new-line
-       "CONTINUE:" new-line
-       new-line
-       "  #define SOB_VOID "(number->string void_addrs) new-line
-       new-line
-       "  #define SOB_NIL "(number->string null-addrs) new-line 
-       new-line
-       "  #define SOB_BOOLEAN_FALSE "(number->string bool-f-addrs) new-line 
-       new-line
-       "  #define SOB_BOOLEAN_TRUE "(number->string bool-t-addrs) new-line
-       new-line
-       "JUMP(AFTER_COMPARE);" new-line
-       "COMPARE_label:" new-line
-        "	PUSH(FP);" new-line
-        "	MOV(FP, SP);" new-line
-        "	PUSH(R1);" new-line
-        "	PUSH(R2);" new-line
-        "	PUSH(R3);" new-line
-        "	PUSH(R4);" new-line
-        "	PUSH(R5);" new-line
-        "	MOV(R1,FPARG(0));" new-line
-        "	MOV(R2,FPARG(1));" new-line
-        "	MOV(R3,INDD(R1,1));" new-line
-        "	MOV(R4,INDD(R2,1));" new-line
-        "	CMP(IND(R1),T_INTEGER);" new-line
-        "	JUMP_EQ(cmp_nums);" new-line
-        "	MOV(R1,INDD(R1,2));" new-line
-        "	second_check:"	new-line
-        " 	CMP(IND(R2),T_INTEGER);" new-line
-        "	JUMP_EQ(Two_integers);" new-line
-        "	MOV(R2,(INDD(R2,2)));" new-line
-        "	General:" new-line
-        "	MUL(R3,R2); " new-line
-        "	MUL(R1,R4);"	new-line
-        "	CMP(R1,R3);" new-line
-        "	JUMP_EQ(nums_eq);"	new-line
-        "	JUMP_LT(nums_lt);" new-line
-        "	MOV(R0,1);"	new-line
-        "	JUMP(nums_finish);" new-line
-        "	nums_eq:" new-line
-        "	MOV(R0,0);" new-line
-        "	JUMP(nums_finish);" new-line
-        "	nums_lt:" new-line
-        "		MOV(R0,-1);" new-line
-        "		JUMP(nums_finish);" new-line
-        "	cmp_nums:" new-line
-        "	MOV(R1,1);" new-line
-        "	JUMP(second_check);" new-line
-        "	Two_integers:" new-line
-        "	MOV(R2,1);" new-line 
-        "	JUMP(General);" new-line
-        "	nums_finish:" new-line
-        "	POP(R5);" new-line
-        "	POP(R4);" new-line
-        "	POP(R3);" new-line
-        "	POP(R2);" new-line
-        "	POP(R1);" new-line
-        "POP(FP);"new-line
-        "RETURN;"new-line
-    " AFTER_COMPARE:" new-line
+        	(add-to-code "#include <stdlib.h>")
+        	(add-to-code "#include <string.h>")
+        	(add-to-code "#include <stdio.h>")
+        	(add-to-code "#include \"arch/cisc.h\"")
+        	(add-to-code "#include \"arch/debug_macros.h.c\"")
+        	(add-to-code "#define DO_SHOW 2")
+        	(add-to-code "int main() {")
+        	(add-line-to-code "int i,j")
+        	(add-line-to-code "START_MACHINE")
+        	(add-line-to-code (JUMP "CONTINUE"))
+        	(add-to-code "#include \"arch/char.lib\"")
+        	(add-to-code "#include \"arch/io.lib\"")
+        	(add-to-code "#include \"arch/math.lib\"")
+        	(add-to-code "#include \"arch/string.lib\"")
+        	(add-to-code "#include \"arch/system.lib\"")
+        	(add-to-code "#include \"arch/scheme.lib\"")
+        	(add-label-to-code "CONTINUE")
+     			(add-to-code (string-append "#define SOB_VOID "(number->string void_addrs)))
+     			(add-to-code (string-append "#define SOB_NIL "(number->string null-addrs)))
+     			(add-to-code (string-append "#define SOB_BOOLEAN_FALSE "(number->string bool-f-addrs)))
+     			(add-to-code (string-append "#define SOB_BOOLEAN_TRUE "(number->string bool-t-addrs)))
+     			(add-line-to-code (JUMP "AFTER_COMPARE"))
+     			(add-label-to-code "COMPARE_label")
+     			(add-line-to-code (PUSH "FP"))
+     			(add-line-to-code (MOV "FP" "SP"))
+     			(add-line-to-code (PUSH "R1"))
+     			(add-line-to-code (PUSH "R2"))
+     			(add-line-to-code (PUSH "R3"))
+     			(add-line-to-code (PUSH "R4"))
+     			(add-line-to-code (PUSH "R5"))
+
+     			(add-line-to-code (MOV "R1" (FPARG "0")))
+     			(add-line-to-code (MOV "R2" (FPARG "1")))
+     			(add-line-to-code (MOV "R3" (INDD "R1" "1")))
+     			(add-line-to-code (MOV "R4" (INDD "R2" "1")))
+     			(add-line-to-code (CMP (IND "R1") "T_INTEGER"))
+     			(add-line-to-code (JUMP_EQ "cmp_nums"))
+     			(add-line-to-code (MOV "R1" (INDD "R1" "2")))
+     			(add-label-to-code "second_check")
+     			
+     			(add-line-to-code (CMP (IND "R2") "T_INTEGER"))
+     			(add-line-to-code (JUMP_EQ "Two_integers"))
+     			(add-line-to-code (MOV "R2" (INDD "R2" "2")))
+     			(add-label-to-code "General")
+     			(add-line-to-code (MUL "R3" "R2"))
+     			(add-line-to-code (MUL "R1" "R4"))
+     			(add-line-to-code (CMP "R1" "R3"))
+     			(add-line-to-code (JUMP_EQ "nums_eq"))
+
+     			(add-line-to-code (JUMP_LT "nums_lt"))
+     			(add-line-to-code (MOV "R0" "1"))
+     			(add-line-to-code (JUMP "nums_finish"))
+     			(add-label-to-code "nums_eq")
+
+     			(add-line-to-code (MOV "R0" "0"))
+     			(add-line-to-code (JUMP "nums_finish"))
+     			(add-label-to-code "nums_lt")
+     			
+		      (add-line-to-code (MOV "R0" "-1"))
+     			(add-line-to-code (JUMP "nums_finish"))
+     			(add-label-to-code "cmp_nums")
+     			(add-line-to-code (MOV "R1" "1"))
+     			(add-line-to-code (JUMP "second_check"))
+     			(add-label-to-code "Two_integers")
+     			(add-line-to-code (MOV "R2" "1"))
+     			(add-line-to-code (JUMP "General"))
+     			(add-label-to-code "nums_finish")
+
+					(add-line-to-code (POP "R5"))
+					(add-line-to-code (POP "R4"))
+					(add-line-to-code (POP "R3"))
+					(add-line-to-code (POP "R2"))
+					(add-line-to-code (POP "R1"))
+					(add-line-to-code (POP "FP"))
+					(add-line-to-code "RETURN")
+					(add-label-to-code "AFTER_COMPARE")
        
-((primitive-bigger constants-table fvars-table frst_sym_address)) new-line
-((primitive-remainder constants-table fvars-table frst_sym_address))  new-line
-((primitive-rational constants-table fvars-table frst_sym_address)) new-line
-((primitive-numerator constants-table fvars-table frst_sym_address)) new-line
-((primitive-denominator constants-table fvars-table frst_sym_address)) new-line       
-((primtive-symbol->string constants-table fvars-table frst_sym_address)) new-line
-((prim-cons constants-table fvars-table frst_sym_address)) new-line
-((primitive-eq constants-table fvars-table frst_sym_address)) new-line
-((primitive-vector constants-table fvars-table frst_sym_address)) new-line
-((primitive-make-string constants-table fvars-table frst_sym_address)) new-line
-((primitive-make-vector constants-table fvars-table frst_sym_address)) new-line
-((primitive-string-set constants-table fvars-table frst_sym_address)) new-line
-((primitive-vector-set constants-table fvars-table frst_sym_address)) new-line
-((primitive-vector-length constants-table fvars-table frst_sym_address)) new-line
-((primitive-vector-ref constants-table fvars-table frst_sym_address)) new-line 
-((primitive-str-length constants-table fvars-table frst_sym_address))new-line
-((primitive-string-ref constants-table fvars-table frst_sym_address)) new-line
-((primtive-set-cdr! constants-table fvars-table frst_sym_address)) new-line
-((primtive-set-car! constants-table fvars-table frst_sym_address)) new-line
-((primitive-procedure? constants-table fvars-table frst_sym_address)) new-line
-((primitive-pair? constants-table fvars-table frst_sym_address)) new-line
-((primitive-symbol? constants-table fvars-table frst_sym_address)) new-line
-((primitive-string? constants-table fvars-table frst_sym_address)) new-line
-((primitive-zero? constants-table fvars-table frst_sym_address)) new-line
-((primitive-vector? constants-table fvars-table frst_sym_address)) new-line
-((primitive-null? constants-table fvars-table frst_sym_address)) new-line
-((primitive-char? constants-table fvars-table frst_sym_address)) new-line
-((primitive-integer? constants-table fvars-table frst_sym_address)) new-line
-((primitive-boolean? constants-table fvars-table frst_sym_address)) new-line
-((primitive-char->integer constants-table fvars-table frst_sym_address)) new-line
-((primitive-integer->char constants-table fvars-table frst_sym_address)) new-line
-((primitive-car constants-table fvars-table frst_sym_address)) new-line
-((primitive-cdr constants-table fvars-table frst_sym_address))  new-line
-((prim-string-to-symbol constants-table fvars-table frst_sym_address)) new-line
-((primitive-apply constants-table fvars-table frst_sym_address)) new-line
-((primitive-symbol-string constants-table fvars-table frst_sym_address)) new-line       
-((primitive-number constants-table fvars-table frst_sym_address)) new-line
-((primitive-numbers-equal constants-table fvars-table frst_sym_address)) new-line
-((primitive-smaller constants-table fvars-table frst_sym_address)) new-line
-((primitive-mul constants-table fvars-table frst_sym_address)) new-line 
-((primitive-div constants-table fvars-table frst_sym_address)) new-line
-((primitive-minus constants-table fvars-table frst_sym_address)) new-line
-((primitive-plus constants-table fvars-table frst_sym_address)) new-line))))
+(add-to-code ((primitive-bigger constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-remainder constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-rational constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-numerator constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-denominator constants-table fvars-table frst_sym_address)))      
+(add-to-code ((primtive-symbol->string constants-table fvars-table frst_sym_address)))
+(add-to-code ((prim-cons constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-eq constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-vector constants-table fvars-table frst_sym_address))) 
+(add-to-code ((primitive-make-string constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-make-vector constants-table fvars-table frst_sym_address))) 
+(add-to-code ((primitive-string-set constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-vector-set constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-vector-length constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-vector-ref constants-table fvars-table frst_sym_address))) 
+(add-to-code ((primitive-str-length constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-string-ref constants-table fvars-table frst_sym_address)))
+(add-to-code ((primtive-set-cdr! constants-table fvars-table frst_sym_address)))
+(add-to-code ((primtive-set-car! constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-procedure? constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-pair? constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-symbol? constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-string? constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-zero? constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-vector? constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-null? constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-char? constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-integer? constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-boolean? constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-char->integer constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-integer->char constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-car constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-cdr constants-table fvars-table frst_sym_address)))
+(add-to-code ((prim-string-to-symbol constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-apply constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-symbol-string constants-table fvars-table frst_sym_address)))     
+(add-to-code ((primitive-number constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-numbers-equal constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-smaller constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-mul constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-div constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-minus constants-table fvars-table frst_sym_address)))
+(add-to-code ((primitive-plus constants-table fvars-table frst_sym_address)))
+))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define generate-primitive-closure
     (lambda (lbl addr)   
             (string-append
-			"	PUSH(3);" new-line
-			"	CALL(MALLOC);" new-line
-			"	DROP(1);" new-line
-			"	MOV(INDD(R0,0),IMM(T_CLOSURE));" new-line 
-			"	MOV(INDD(R0,1),IMM(0));" new-line
-			"	MOV(INDD(R0,2),LABEL("lbl"));" new-line
-			"	MOV(IND(" (number->string addr) "),R0);" new-line
+            	(add-line-to-code (PUSH "3"))
+            	(add-line-to-code (CALL "MALLOC"))
+            	(add-line-to-code (DROP "1"))
+            	(add-line-to-code (MOV (INDD "R0" "0") (IMM "T_CLOSURE")))
+            	(add-line-to-code (MOV (INDD "R0" "1") (IMM "0")))
+            	(add-line-to-code (MOV (INDD "R0" "2") (string-append "LABEL(" lbl ")")))
+            	(add-line-to-code (MOV (IND (number->string addr)) "R0"))
+		
 			
 		)))	
 

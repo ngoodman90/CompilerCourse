@@ -1640,7 +1640,7 @@
 
 (define add-line-to-code
   (lambda (line)
-      (add-to-code (string-append line ";" (string #\newline)))))
+      (string-append line ";" (string #\newline))))
 
 (define add-label-to-code
   (lambda (label)
