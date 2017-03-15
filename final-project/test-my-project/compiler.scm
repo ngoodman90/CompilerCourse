@@ -206,7 +206,7 @@
     done))
 
 (define <NamedChar>
-    (new    
+    (new	
         (*parser <ignore>)
         
         (*parser (word "lambda"))
@@ -268,7 +268,7 @@
         (*pack (lambda (n) (integer->char n)))
         
         (*caten 2)
-        (*pack-with (lambda (pre c) `(,@c)))    
+        (*pack-with (lambda (pre c) `(,@c)))	
     done))
 
 (define <Char>
@@ -406,7 +406,7 @@
         (*pack (lambda (_) #\tab))
         (*parser (word-ci "\\f"))
         (*pack (lambda (_) #\page))
-        (*parser (word-ci "\\n"))   
+        (*parser (word-ci "\\n"))	
         (*pack (lambda (_) #\newline))
         (*parser (word-ci "\\r"))
         (*pack (lambda (_) #\return))
@@ -471,14 +471,14 @@
 ; ####################################### Math Operations & Infix Expressions #######################################
 
 (define <PowerSymbol>
-    (new        
+    (new		
         (*parser (char #\^))
         (*parser (word "**"))
         (*disj 2)
     done))
 
 (define <MathOperationSymbol>
-    (new        
+    (new		
         (*parser (char #\+))
         (*parser (char #\-))
         (*parser (char #\*))
@@ -488,7 +488,7 @@
     done))
     
 (define <MathOperationSymbolWithoutDivision>
-    (new        
+    (new		
         (*parser <MathOperationSymbol>)
         (*parser (char #\/))
         *diff
@@ -523,7 +523,7 @@
     done))
 
 (define <InfixSexprEscape>
-    (new        
+    (new		
         (*parser <InfixPrefixExtensionPrefix>)
         (*delayed (lambda () <Sexpr>))
         (*caten 2)
@@ -618,7 +618,7 @@
     done))
 
 (define <InfixPower>
-    (new        
+    (new 		
         (*parser <InfixExpressionWithoutMath>)                ; InfixExprWithoutMath
         
         (*parser (word "**"))
@@ -643,7 +643,7 @@
     done))
 
 (define <InfixMultiplicationOrDivision>
-    (new        
+    (new 		
         (*parser <BeginingOfInfixMultiplicationOrDivision>)       ; InfixPower / - InfixPower
 
         (*parser (char #\*))
@@ -657,7 +657,7 @@
         (*parser (char #\/))
         (*disj 2)
         (*parser <InfixPower>)
-        (*caten 2) *star                                    ; ( *// InfixMulDiv )*
+        (*caten 2) *star				                    ; ( *// InfixMulDiv )*
 
         (*caten 2)
         (*pack-with (lambda (h t) (create-mul-div-list h t)))
@@ -835,16 +835,16 @@
 
 (define constant?
     (lambda (c)
-    (or (number? c) (char? c) (boolean? c) (string? c) (eq? c (void)))))
+	(or (number? c) (char? c) (boolean? c) (string? c) (eq? c (void)))))
 
 (define const-record
     (compose-patterns
-    (pattern-rule 
+	(pattern-rule 
             (? 'expr constant?)
             (lambda (expr) (list 'const expr)))
             
         (pattern-rule 
-        `(quote ,(? 'expr))
+	    `(quote ,(? 'expr))
             (lambda (expr) (list 'const expr)))))
 
             
@@ -863,7 +863,7 @@
 
 (define variable?
     (lambda (w)
-    (and (symbol? w) (unreserved-word? w))))
+	(and (symbol? w) (unreserved-word? w))))
 
 (define variable-record
     (pattern-rule 
@@ -885,8 +885,8 @@
             '(if ,(? 'test))
             (lambda (test) 
                 error))
-           
-    (pattern-rule
+		   
+	(pattern-rule
             `(if ,(? 'test) ,(? 'dit))
             (lambda (test dit) 
                 `(if3 ,(do-parse test) ,(do-parse dit) ,(do-parse (void)))))
@@ -897,7 +897,7 @@
                 `(if3 ,(do-parse test) ,(do-parse dit) ,(do-parse dif))))))
             
 ; ####################################### Disjunctions #######################################
-    
+	
 (define parse-list
     (lambda (lst)
         (if (null? lst)
@@ -905,20 +905,20 @@
             (if (null? (cdr lst))
                 (list (do-parse (car lst)))
                 `(,(do-parse (car lst)) ,@(parse-list (cdr lst)))))))
-        
+		
 (define or-record
     (compose-patterns
         (pattern-rule 
             `(or)
             (lambda () 
                 (do-parse #f)))
-    
-    (pattern-rule 
+	
+	(pattern-rule 
             `(or ,(? 'expr))
             (lambda (expr) 
                 (do-parse expr)))
    
-    (pattern-rule 
+	(pattern-rule 
             `(or ,(? 'expr) . ,(? 'expr-lst))
             (lambda (expr expr-lst) 
                 `(or (,(do-parse expr) ,@(parse-list expr-lst)))))))
@@ -947,17 +947,17 @@
 (define lambda-with-optional-arguements?
     (lambda (pair)
         (and (pair? pair) (not (duplicate-variables? pair)))))
-        
+		
 (define get-mandatory-variables
     (lambda (pair)
         (if (pair? pair)
             `(,(car pair) ,@(get-mandatory-variables (cdr pair)))
             '())))
-        
+		
 (define get-v-rest
     (lambda (pair)
         (cdr (last-pair pair))))
-        
+		
 (define variadic-lambda?
     (lambda (lst)
         (if (variable? lst)
@@ -974,35 +974,35 @@
             '(lambda . ,(? 'expr-lst))
             (lambda (expr-lst) error))
             
-    (pattern-rule                                                                  ; lambda-simple
+	(pattern-rule                                                                  ; lambda-simple
             `(lambda ,(? 'vars regular-lambda?) ,(? 'expr) . ,(? 'expr-lst))
             (lambda (vars expr expr-lst)
                 `(lambda-simple ,vars ,(do-parse `(begin ,expr ,@expr-lst)))))
-           
-    (pattern-rule                                                                  ; lambda-opt
+		   
+	(pattern-rule                                                                  ; lambda-opt
             `(lambda ,(? 'vars lambda-with-optional-arguements?) ,(? 'expr) . ,(? 'expr-lst))
             (lambda (vars expr expr-lst)
                 `(lambda-opt ,(get-mandatory-variables vars) ,(get-v-rest vars) ,(do-parse `(begin ,expr ,@expr-lst)))))
 
-    (pattern-rule                                                                  ; lambda-var
+	(pattern-rule                                                                  ; lambda-var
             `(lambda ,(? 'vars variadic-lambda?) ,(? 'expr) . ,(? 'expr-lst))
             (lambda (vars expr expr-lst)
                 `(lambda-var ,vars ,(do-parse `(begin ,expr ,@expr-lst)))))))
-        
+		
 ; ####################################### Define #######################################
-        
+		
 (define define-record
     (compose-patterns
-    (pattern-rule                                                                  ; Regular Define
+	(pattern-rule                                                                  ; Regular Define
             `(define ,(? 'var variable?) . ,(? 'expr))
             (lambda (var expr)
                 `(def ,(do-parse var) ,(do-parse (cons 'begin expr)))))
-    
-    (pattern-rule                                                                  ; MIT Define
+	
+	(pattern-rule                                                                  ; MIT Define
             `(define ,(? 'var pair?) . ,(? 'expr))
             (lambda (var expr) 
                     `(def ,(do-parse (car var)) ,(do-parse `(lambda ,(cdr var) ,(cons 'begin expr))))))))
-           
+		   
 ; ####################################### Assignments #######################################
 
 (define set-record
@@ -1016,7 +1016,7 @@
 (define applic-record
     (pattern-rule
         `(,(? 'expr unreserved-word?) . ,(? 'expr-lst))
-    (lambda (expr expr-lst)
+	(lambda (expr expr-lst)
             `(applic ,(do-parse expr) ,(parse-list expr-lst)))))
 
 ; ####################################### Sequences #######################################
@@ -1041,17 +1041,17 @@
             
 (define seq-record
     (compose-patterns  
-    (pattern-rule 
+	(pattern-rule 
             `(begin)
             (lambda ()
                 (do-parse (void))))
 
-    (pattern-rule 
+	(pattern-rule 
             `(begin ,(? 'expr))
-         (lambda (expr)
+	     (lambda (expr)
                 (do-parse expr)))
-          
-    (pattern-rule
+		  
+	(pattern-rule
             `(begin ,(? 'expr) . ,(? 'expr-lst))
             (lambda (expr expr-lst)
                 (let ((new-expr-lst (organize-begin-list expr-lst)))
@@ -1067,12 +1067,12 @@
             `(,(string->symbol "quasiquote") ,(? 'qq))
             (lambda (qq)
                 (parse (expand-qq qq))))))
-            
+		    
 ; ####################################### And #######################################
-            
+		    
 (define and-macro-expander
-    (compose-patterns   
-    (pattern-rule 
+    (compose-patterns	
+	(pattern-rule 
             `(and)
             (lambda () 
                 (do-parse #t)))
@@ -1083,14 +1083,14 @@
                 (do-parse expr)))
                 
         (pattern-rule 
-      `(and ,(? 'expr1) ,(? 'expr2))
-          (lambda (expr1 expr2) 
-         (do-parse `(if ,expr1 ,expr2 #f))))
+	  `(and ,(? 'expr1) ,(? 'expr2))
+	      (lambda (expr1 expr2) 
+		 (do-parse `(if ,expr1 ,expr2 #f))))
         
         (pattern-rule 
-      `(and ,(? 'expr1) . ,(? 'expr2))
-          (lambda (expr1 expr2)
-        (do-parse `(if ,expr1 (and ,(car expr2) ,@(cdr expr2)) #f))))))
+	  `(and ,(? 'expr1) . ,(? 'expr2))
+	      (lambda (expr1 expr2)
+		(do-parse `(if ,expr1 (and ,(car expr2) ,@(cdr expr2)) #f))))))
 
 ; ####################################### Let #######################################
 
@@ -1099,7 +1099,7 @@
         (if (null? lst)
             '()
             `(,(caar lst) ,@(let-variables(cdr lst))))))
-      
+	  
 (define let-values
     (lambda (lst)
         (if (null? lst)
@@ -1122,7 +1122,7 @@
             (lambda (arguements body next-body)
                 (let ((vars (let-variables arguements))
                     (vals (let-values arguements)))
-            (if (not (duplicate-variables? vars))
+		    (if (not (duplicate-variables? vars))
                         ((lambda () (parse `((lambda ,vars ,body ,@next-body) ,@vals))))
                         error))))))
 
@@ -1136,10 +1136,10 @@
 
 (define init-vals-to-false
     (lambda (vals)
-    (if (null? vals)
+	(if (null? vals)
             vals
             `(#f ,@(init-vals-to-false (cdr vals))))))
-    
+	
 (define letrec-macro-expander
     (compose-patterns
         (pattern-rule
@@ -1156,7 +1156,7 @@
             (lambda (arguements body next-body)
                 (let ((vars (let-variables arguements))
                     (vals (let-values arguements)))
-            (let ((vars-and-vals (pair-up-vars-and-vals vars vals))
+		    (let ((vars-and-vals (pair-up-vars-and-vals vars vals))
                         (vals (init-vals-to-false vals)))
                         (if (not (duplicate-variables? vars))
                             ((lambda () (parse `((lambda ,vars (begin ,@vars-and-vals ((lambda () ,body ,@next-body)))) ,@vals))))
@@ -1169,16 +1169,16 @@
         (pattern-rule
             '(let*)
             (throw-error))
-        
+		
         (pattern-rule
             '(let* ,(? 'arguements))
             (lambda (arguements)
                 error))
-        
+		
         (pattern-rule
             `(let* ,(? 'arguements) ,(? 'body) . ,(? 'next-body))
             (lambda (arguements body next-body)
-        (if(> (length arguements) 1)
+		(if(> (length arguements) 1)
                     (do-parse `(let ,(list (car arguements)) (let* ,(cdr arguements) ,body ,@next-body)))
                     (do-parse `(let ,arguements ,body ,@next-body)))))))
                 
@@ -1189,14 +1189,14 @@
         (append '(begin) action)))
 
 (define cond-macro-expander
-    (compose-patterns   
-    (pattern-rule 
+    (compose-patterns	
+	(pattern-rule 
             `(cond)
-        (throw-error))
-            
+	    (throw-error))
+			
         (pattern-rule
             `(cond (,(? 'condition) . ,(? 'action)))
-        (lambda (condition action)
+	    (lambda (condition action)
                 (if (list? action)
                     (if (eq? 'else condition)
                         (parse `,(append-action action))
@@ -1205,7 +1205,7 @@
                         (parse `(action))
                         (parse `(if ,condition ,action))))))
 
-    (pattern-rule
+	(pattern-rule
             `(cond (,(? 'condition) . ,(? 'action)) . ,(? 'next-condition))
             (lambda (condition action next-condition)
                 (if (list? action)
@@ -1216,7 +1216,7 @@
 
 (define parse
     (lambda (sexpr)
-        (let ((expr (compose-patterns   
+        (let ((expr (compose-patterns	
                      const-record
                      variable-record
                      condition-record
@@ -1235,8 +1235,8 @@
              (expr sexpr (throw-error)))))
             
 (define tag-parser parse)
-                                    
-                                    
+									
+									
 ; ####################################### Assignment 3 #######################################
 
 (define create_set_exprs
@@ -1246,7 +1246,7 @@
                
                `(set (var ,(car varss_)) ,@(car valuess_))
                
-               )))))))  
+               )))))))	
                
 (define create_falsee_ 
     (lambda (varss_)
@@ -1272,8 +1272,8 @@
 
             ( helper-eliminate-AH (eliminate-nested-defines1 lst (lambda (x y)
             (if (null? x) 
-        lst 
-          `(,(transform-p-letrec-to-lambda `(letrec ,(mymap (lambda (i)  `(,(cadr (cadr i)) ,(caddr i))) x) ,@y)))))))
+		lst 
+	      `(,(transform-p-letrec-to-lambda `(letrec ,(mymap (lambda (i)  `(,(cadr (cadr i)) ,(caddr i))) x) ,@y)))))))
 ))
 
 ;help functions        
@@ -1291,15 +1291,15 @@
 ;bodies     
 (define get_body_of_lambda_simple
     (lambda (lam_exps)
-    (caddr lam_exps)))
-    
+	(caddr lam_exps)))
+	
 (define get_body_of_lambda_opt
     (lambda (lam_exps)
-    (cadddr lam_exps)))
+	(cadddr lam_exps)))
 
 (define get_body_of_lambda_variadic
     (lambda (lam_exps)
-    (caddr lam_exps)))
+	(caddr lam_exps)))
 ;;parms
 (define lambda_simple_paramters
   (lambda (lam_exps)
@@ -1360,16 +1360,16 @@
 (define eliminate-nested-defines1
   (lambda (pes ret-ds+es)
       (if (null? pes) (ret-ds+es '() '())
-        (eliminate-nested-defines1 (cdr pes)
-          (lambda (ds es)
-              (cond ( (eq? (caar pes) 'def)
-                  (ret-ds+es (cons (car pes) ds ) es))
-                  ( (eq? (caar pes) 'seq)
-                      (eliminate-nested-defines1 (cadar pes)
-                      (lambda (ds1 es1 ) (ret-ds+es
-                      (append ds1 ds)
-                      (append es1 es)))))
-                 (else  (ret-ds+es ds (cons (car pes) es))))
+	    (eliminate-nested-defines1 (cdr pes)
+		  (lambda (ds es)
+			  (cond ( (eq? (caar pes) 'def)
+				  (ret-ds+es (cons (car pes) ds ) es))
+				  ( (eq? (caar pes) 'seq)
+				      (eliminate-nested-defines1 (cadar pes)
+				      (lambda (ds1 es1 ) (ret-ds+es
+				      (append ds1 ds)
+				      (append es1 es)))))
+				 (else  (ret-ds+es ds (cons (car pes) es))))
       )))))
       
 ; ####################################### Eliminate Nested Defines #######################################
@@ -1389,7 +1389,7 @@
                         (if (eq? (caar var) 'def)
                             (func (cons (car var) expr1) expr2)
                             (if (eq? (caar var) 'seq)
-                    (perform-define-split
+			        (perform-define-split
                                     (cadar var)
                                     (lambda (expr3 expr4)
                                             (func (append expr3 expr1)
@@ -1436,143 +1436,143 @@
 
 (define is_set_?
   (lambda (exps var)
-     ( equal? var ( cadr exps) )))
+	 ( equal? var ( cadr exps) )))
  
 
 
-    
+	
 (define is_var_set?
       (lambda (lambda_body var)
-    (ormap (lambda (y)
-     (if (and (not (null? y)) (list? y))
-    
-     (if (and (eq? 'set (car y)) (is_set_? y var)) #t
-     
-          (is_var_set?  y var ))
-              #f
-          )) (car (list lambda_body)) )
-          
-          
-    ))
-    
-    
-    
-    
+	(ormap (lambda (y)
+	 (if (and (not (null? y)) (list? y))
+	
+	 (if (and (eq? 'set (car y)) (is_set_? y var)) #t
+	 
+		  (is_var_set?  y var ))
+		      #f
+		  )) (car (list lambda_body)) )
+		  
+		  
+	))
+	
+	
+	
+	
 ;It has a get-occurrence somewhere in the body of the procedure. A get means that it either
-;appears as a (pvar name minor) or (bvar name major minor). 
+;appears as a (pvar name minor) or (bvar name major minor).	
 
 
-    
+	
 (define is_get-occurrence_var?
       (lambda (lambda_body var)
-       (ormap (lambda (y)
-     (if (and (not (null? y)) (list? y))
-     
-     (if (equal? var y) #t
-         (if  (eq? 'set (car y))   
-                     ( is_get-occurrence_var? (cddr y)  var)
-         (if (and (is_lambda? y) (not (var_in_lambda_params y var)))
-                           #f
-          (is_get-occurrence_var?  y var ))))
-          #f
-          )) (car (list lambda_body)) )
-          
-       
-       ))
-       
+	   (ormap (lambda (y)
+	 (if (and (not (null? y)) (list? y))
+	 
+	 (if (equal? var y) #t
+	     (if  (eq? 'set (car y))   
+	                 ( is_get-occurrence_var? (cddr y)  var)
+	     (if (and (is_lambda? y) (not (var_in_lambda_params y var)))
+	                       #f
+		  (is_get-occurrence_var?  y var ))))
+		  #f
+		  )) (car (list lambda_body)) )
+		  
+	   
+	   ))
+	   
 (define change_to_box-get
     (lambda (lambda_body var)
      
-    (map (lambda (y)
-         (if (and (not (null? y)) (list? y))
-         (if (and (is_lambda? y) (not (var_in_lambda_params y var))) y
-        (if (equal? (car y) 'box-set) `(box-set ,(cadr y) ,@(change_to_box-get `(,(caddr y)) var ))       ; 
-     (if  (equal? var y) `(box-get ,y)  
-     (change_to_box-get y var ))))
-     y
-       
-          ) )lambda_body)))
+	(map (lambda (y)
+	 	 (if (and (not (null? y)) (list? y))
+	 	 (if (and (is_lambda? y) (not (var_in_lambda_params y var))) y
+		(if (equal? (car y) 'box-set) `(box-set ,(cadr y) ,@(change_to_box-get `(,(caddr y)) var ))       ; 
+	 (if  (equal? var y) `(box-get ,y)  
+	 (change_to_box-get y var ))))
+	 y
+	   
+		  ) )lambda_body)))
 (define change_to_box-set
     (lambda (lambda_body var)
      
-    (map (lambda (y)
-         (if (and (not (null? y)) (list? y))
-              (if (and (is_lambda? y) (not (var_in_lambda_params y var))) y
-     (if (and (equal? (car y) 'set) (equal? var (cadr y)))
-     `(box-set ,(cadr y) ,(change_to_box-set (caddr y) var))  
-     (change_to_box-set y var )
-     ))
-     
-     y
-       
-          ) )lambda_body)))  
+	(map (lambda (y)
+	 	 (if (and (not (null? y)) (list? y))
+		      (if (and (is_lambda? y) (not (var_in_lambda_params y var))) y
+	 (if (and (equal? (car y) 'set) (equal? var (cadr y)))
+	 `(box-set ,(cadr y) ,(change_to_box-set (caddr y) var))  
+	 (change_to_box-set y var )
+	 ))
+	 
+	 y
+	   
+		  ) )lambda_body)))  
 
 (define helper_Do_box_and_get 
   (lambda (lambds parms body_)
       (cond ( (or (not (list? parms)) (null? parms)) lambds ) 
-          ( (and (is_Bound? body_ `(var ,(car parms)))  (is_var_set? body_ `(var ,(car parms))) (is_get-occurrence_var? body_ `(var ,(car parms))))
-          (helper_Do_box_and_get (change_to_box-get (change_to_box-set lambds `(var ,(car parms))) `(var ,(car parms)))  (cdr parms) body_))
-          
-          (else (helper_Do_box_and_get lambds (cdr parms) body_))
-          )
+	      ( (and (is_Bound? body_ `(var ,(car parms)))  (is_var_set? body_ `(var ,(car parms))) (is_get-occurrence_var? body_ `(var ,(car parms))))
+	      (helper_Do_box_and_get (change_to_box-get (change_to_box-set lambds `(var ,(car parms))) `(var ,(car parms)))  (cdr parms) body_))
+	      
+	      (else (helper_Do_box_and_get lambds (cdr parms) body_))
+	      )
     ))
   
   
 (define box-set_help
       (lambda (lambdas)
-      (let* ( (parama1 (cond ( (eq? (car lambdas) 'lambda-simple)  (lambda_simple_paramters lambdas))
-                  ( (eq? (car lambdas) 'lambda-opt)     (lambda_opt_paramters lambdas))
-                  ( (eq? (car lambdas) 'lambda-var)  (lambda_variadic_paramters lambdas))   ))
-                  
-          (body_  (cond ( (eq? (car lambdas) 'lambda-simple)  `(,(get_body_of_lambda_simple lambdas)))
-                  ( (eq? (car lambdas) 'lambda-opt)     `(,(get_body_of_lambda_opt lambdas)))
-                  ( (eq? (car lambdas) 'lambda-var) `(,(get_body_of_lambda_variadic lambdas)))   ))  
-        
-        (lambdd (helper_Do_box_and_get  lambdas parama1 body_))
-        
-        (body_1  (cond ( (eq? (car lambdd) 'lambda-simple)  (get_body_of_lambda_simple lambdd))
-                  ( (eq? (car lambdd) 'lambda-opt)  (get_body_of_lambda_opt lambdd))
-                  ( (eq? (car lambdd) 'lambda-var) (get_body_of_lambda_variadic lambdd))   ))
-        ;this willl give us list of if the three conditions occur ==> (set (pvar name minor) (box (pvar name minor)))   
-        (sets_to_add_after_lambda 
-        (filter (lambda (t) (not (null? t))) (mymap 
-                        (lambda (p)
-              (if (and  (is_Bound? body_ `(var ,p))  (is_var_set? body_ `(var ,p)) (is_get-occurrence_var? body_ `(var ,p))) 
-                  `(set (var ,p) (box (var ,p)))
-                  '() )
-                    ) parama1 )
-                 ))
-        )
+	  (let* ( (parama1 (cond ( (eq? (car lambdas) 'lambda-simple)  (lambda_simple_paramters lambdas))
+				  ( (eq? (car lambdas) 'lambda-opt) 	(lambda_opt_paramters lambdas))
+				  ( (eq? (car lambdas) 'lambda-var)  (lambda_variadic_paramters lambdas))   ))
+				  
+		  (body_  (cond ( (eq? (car lambdas) 'lambda-simple)  `(,(get_body_of_lambda_simple lambdas)))
+				  ( (eq? (car lambdas) 'lambda-opt) 	`(,(get_body_of_lambda_opt lambdas)))
+				  ( (eq? (car lambdas) 'lambda-var) `(,(get_body_of_lambda_variadic lambdas)))   ))  
+		
+		(lambdd (helper_Do_box_and_get  lambdas parama1 body_))
+		
+		(body_1  (cond ( (eq? (car lambdd) 'lambda-simple)  (get_body_of_lambda_simple lambdd))
+				  ( (eq? (car lambdd) 'lambda-opt) 	(get_body_of_lambda_opt lambdd))
+				  ( (eq? (car lambdd) 'lambda-var) (get_body_of_lambda_variadic lambdd))   ))
+		;this willl give us list of if the three conditions occur ==> (set (pvar name minor) (box (pvar name minor)))	
+		(sets_to_add_after_lambda 
+		(filter (lambda (t) (not (null? t))) (mymap 
+					    (lambda (p)
+		      (if (and  (is_Bound? body_ `(var ,p))  (is_var_set? body_ `(var ,p)) (is_get-occurrence_var? body_ `(var ,p))) 
+			      `(set (var ,p) (box (var ,p)))
+			      '() )
+				    ) parama1 )
+				 ))
+		)
 
-        ((lambda (xxx) 
-            (cond ( (is_lambda_var? xxx)
-            `( ,(car xxx) ,@parama1 ,(caddr xxx)))
-            ((is_lambda_opt? xxx)
-            `( ,(car xxx) ,(reverse (cdr (reverse parama1))) ,(car (reverse parama1)) ,(caddr xxx)) )
-            ( (is_lambda_simple? xxx)
-            `( ,(car xxx) ,parama1 ,(caddr xxx)))
-        
-        ))
-        ;;now we want to add 
-        (if (> (length sets_to_add_after_lambda)  0)
-        (if (equal? (car body_1) 'seq)
-         `( ,(car lambdd) ,parama1   (seq (,@sets_to_add_after_lambda ,@(cadr  body_1))))
-        `( ,(car lambdd) ,parama1   (seq (,@sets_to_add_after_lambda , body_1))))
-        `( ,(car lambdd) ,parama1   , body_1)))
-                  
+		((lambda (xxx) 
+		    (cond ( (is_lambda_var? xxx)
+		    `( ,(car xxx) ,@parama1 ,(caddr xxx)))
+			((is_lambda_opt? xxx)
+			`( ,(car xxx) ,(reverse (cdr (reverse parama1))) ,(car (reverse parama1)) ,(caddr xxx)) )
+		    ( (is_lambda_simple? xxx)
+		    `( ,(car xxx) ,parama1 ,(caddr xxx)))
+		
+		))
+		;;now we want to add 
+		(if (> (length sets_to_add_after_lambda)  0)
+		(if (equal? (car body_1) 'seq)
+		 `( ,(car lambdd) ,parama1   (seq (,@sets_to_add_after_lambda ,@(cadr  body_1))))
+		`( ,(car lambdd) ,parama1   (seq (,@sets_to_add_after_lambda , body_1))))
+		`( ,(car lambdd) ,parama1   , body_1)))
+				  
       )))
       
 (define box-set_
       (lambda (eliminate_pes)
      (map (lambda (y)
-        (if (or (null? y) (not (list? y) ) )
-          y
-         (if (is_lambda? y) 
-         (box-set_ (box-set_help y)) 
-         
-         (box-set_ y)
-          
-          )))eliminate_pes)))
+	    (if (or (null? y) (not (list? y) ) )
+		  y
+		 (if (is_lambda? y) 
+		 (box-set_ (box-set_help y)) 
+		 
+		 (box-set_ y)
+	      
+	      )))eliminate_pes)))
 (define box-set
           (lambda (eliminate_pes)
     (car (box-set_ `(,eliminate_pes)))))
@@ -1711,7 +1711,7 @@
 ;;                  (begin (set! boxed-variables (lambda-var-boxing expr))
 ;;                         `(,(car expr) ,(cadr expr) (seq (,@(car boxed-variables) ,@(lambda-box-set boxed-variables))))))
 ;;                 (else `(,(box-set (car expr)) ,@(box-set (cdr expr)))))))                                                       ; everything else
-          
+	      
 ; ####################################### Removing Redundant Applications #######################################
 
 (define lambda-simple?
@@ -1735,19 +1735,19 @@
     (or (null? expr) (not (pair? expr)))))
     
 (define remove-applic-expr-helper?
-    (lambda (expr)
-        (and 
-            (pair? expr) 
-            (lambda-simple? expr) 
-            (= 3 (length expr)) 
-            (null? (cadr expr)))
-        ))
+	(lambda (expr)
+		(and 
+			(pair? expr) 
+			(lambda-simple? expr) 
+			(= 3 (length expr)) 
+			(null? (cadr expr)))
+		))
 
 (define remove-applic-expr?
   (lambda (expr)
     (and 
-        (equal? 'applic (car expr)) 
-        (remove-applic-expr-helper? (cadr expr)))
+    	(equal? 'applic (car expr)) 
+    	(remove-applic-expr-helper? (cadr expr)))
     ))
 
 (define remove-applic-lambda-nil
@@ -1758,7 +1758,7 @@
     ))
 
 ; ####################################### Annotating Variables With Their Lexical Address #######################################
-          
+	      
 ;;**part 5
 
 (define (Notmember? x list)
@@ -1815,27 +1815,27 @@
 ;;here we implement part 6
 
 ;good
-(set! c_lambdas_counter -1)       
+(set! c_lambdas_counter -1)		  
 (define change_pvar
     (lambda (lambds var level place)
     (mymap (lambda (x)
     (if (and (not (null? x)) (list? x))
-          
-        (if (is_lambda? x ) (change_pvar x  var (+ 1 level) place)
-        (if (and (= 0 level) (equal? x var) )
-        `(pvar ,(cadr var) ,place)
-        (if (and (not (= 0 level)) (equal? x var) )
-          `(bvar ,(cadr var) ,(-  level 1) ,place)
-          (change_pvar x  var level place)
-          
-        )
-        ))
-         
-          x)
-       ) lambds)
+	      
+	    (if (is_lambda? x ) (change_pvar x  var (+ 1 level) place)
+	    (if (and (= 0 level) (equal? x var) )
+		`(pvar ,(cadr var) ,place)
+		(if (and (not (= 0 level)) (equal? x var) )
+		  `(bvar ,(cadr var) ,(-  level 1) ,place)
+		  (change_pvar x  var level place)
+		  
+		)
+		))
+		 
+		  x)
+	   ) lambds)
     
-    ))
-    
+	))
+	
 (define it
   (lambda (lambdas parms number)
     (if (null? parms)
@@ -1849,48 +1849,48 @@
 
 (define pe->lex-pe_help
       (lambda (lambdas)
-      (let* ( (parama1 (cond ( (eq? (car lambdas) 'lambda-simple)  (lambda_simple_paramters lambdas))
-                  ( (eq? (car lambdas) 'lambda-opt)     (lambda_opt_paramters lambdas))
-                  ( (eq? (car lambdas) 'lambda-var) (lambda_variadic_paramters lambdas))   ))
-          
-        
-        ;(lambdd (it  lambdas parama1 0))
-        
-        
-        ;this willl give us list of if the three conditions occur ==> (set (pvar name minor) (box (pvar name minor)))   
-        
-        )
-    
+	  (let* ( (parama1 (cond ( (eq? (car lambdas) 'lambda-simple)  (lambda_simple_paramters lambdas))
+				  ( (eq? (car lambdas) 'lambda-opt) 	(lambda_opt_paramters lambdas))
+				  ( (eq? (car lambdas) 'lambda-var) (lambda_variadic_paramters lambdas))   ))
+	      
+		
+		;(lambdd (it  lambdas parama1 0))
+		
+		
+		;this willl give us list of if the three conditions occur ==> (set (pvar name minor) (box (pvar name minor)))	
+		
+		)
+	
                 (it  lambdas parama1 0)
-         ;lambdd 
-    
-                  
+		 ;lambdd 
+	
+				  
       )))
       
 (define var_toFvar
   (lambda (pes)
      (mymap (lambda (y)
-        (if (or (null? y) (not (list? y) ) )
-          y
-         (if (equal? (car y) 'var) 
-         `(fvar ,(cadr y))
-         (var_toFvar y)
-          
-          )
-          ))pes)))
+	    (if (or (null? y) (not (list? y) ) )
+		  y
+		 (if (equal? (car y) 'var) 
+		 `(fvar ,(cadr y))
+		 (var_toFvar y)
+	      
+	      )
+	      ))pes)))
       
 (define pe->lex-pe_rec
       (lambda (pes)
      (mymap (lambda (y)
-        (if (or (null? y) (not (list? y) ) )
-          y
-         (if (is_lambda? y) 
-         (pe->lex-pe_help (pe->lex-pe_rec y))
-         (pe->lex-pe_rec y)
-          
-          )
-          ))pes)))
-          
+	    (if (or (null? y) (not (list? y) ) )
+		  y
+		 (if (is_lambda? y) 
+		 (pe->lex-pe_help (pe->lex-pe_rec y))
+		 (pe->lex-pe_rec y)
+	      
+	      )
+	      ))pes)))
+	      
 (define pe->lex-pe
           (lambda (pes)
     (car (var_toFvar(pe->lex-pe_rec `(,pes))))))
@@ -1999,17 +1999,17 @@
     (member (car pe) (list 'set 'box-set))))
 
 (define same-op?
-    (lambda (pe)
-        (or (dont-care? pe) (lambda-expr? pe) (definition? pe) (set-op? pe) (equal? 'box (car pe)))))
+	(lambda (pe)
+		(or (dont-care? pe) (lambda-expr? pe) (definition? pe) (set-op? pe) (equal? 'box (car pe)))))
 
 (define same-op
-    (lambda (pe)
-        (cond ((dont-care? pe) pe)
-                    ((lambda-expr? pe) (lambda-tail-helper pe))
-                    ((definition? pe) `(,(car pe) ,(cadr pe) ,(annotate-tc (caddr pe))))
+	(lambda (pe)
+		(cond ((dont-care? pe) pe)
+					((lambda-expr? pe) (lambda-tail-helper pe))
+					((definition? pe) `(,(car pe) ,(cadr pe) ,(annotate-tc (caddr pe))))
           ((set-op? pe) `(,(car pe) ,(cadr pe) ,@(annotate-tc (cddr pe))))
           ((equal? 'box (car pe)) `(box ,@(annotate-tc (cdr pe)))))
-        ))
+		))
 
 (define lambda-tail
   (lambda (pe)
@@ -2259,7 +2259,7 @@
                             (test-str parser (list->string s) (append cont (list e)))))
                     (lambda (w) `(failed with report: ,@w))))))
         (test-str parser str '()))))
-                  
+			      
 (define file->string
     (lambda (in-file)
         (let ((in-port (open-input-file in-file)))
@@ -2391,7 +2391,7 @@
 
 (define create-const-table
     (lambda (pes init-address)
-    (let ((basic-consts
+	(let ((basic-consts
             `((,init-address  ,void-object (\T_VOID))
                 (,(+ init-address 1) () (\T_NIL))
                 (,(+ init-address 2) ,#t (\T_BOOL 1))
@@ -2399,8 +2399,8 @@
             (constants-table (organize-consts (get-consts pes)) (reverse basic-consts) (+ init-address 6) -1))))
       
 (define search-fvar
-    (lambda (fvar fvar-tab)
-        (cond ((null? fvar-tab) 'error_fvar_not_found)
+	(lambda (fvar fvar-tab)
+		(cond ((null? fvar-tab) 'error_fvar_not_found)
                         ((equal? (cadar fvar-tab) fvar) (caar fvar-tab))
                         (else (search-fvar fvar (cdr fvar-tab))))))
 
@@ -2633,8 +2633,8 @@
   (lambda (lambda-type)
     (lambda (pe_ size-env_ num-params_ const-tab_ fvar-tab_ endlabel_)
       (let* (
-        (parms-of-lambda
-              (cond ((or (eq? lambda-type 'opt) (eq? lambda-type 'simple)) (cadr pe_))
+	    (parms-of-lambda
+		      (cond ((or (eq? lambda-type 'opt) (eq? lambda-type 'simple)) (cadr pe_))
                      ((eq? lambda-type 'variadic) '())))     
             (body (last_element pe_)) 
             (new_env (number->string (+ size-env_ 1)))
@@ -2647,16 +2647,16 @@
             (lbl-end-copy-parms-loop (label-marker "label_end_copy_parms_loop_"))
             (lbl-third-loop (label-marker "lbl_third_loop_")); 
             (lbl-end-third-loop (label-marker "lbl_end_third_loop_")) 
-        (ALLOCATING_MEMORY_FOR_NEW_ENV   
-            (string-append
-                            (add-line-to-code (PUSH new_env))
-                            (add-line-to-code (CALL "MALLOC"))
-                            (add-line-to-code (DROP "1"))
-                            (add-line-to-code (MOV "R1" "R0"))
-                            )))
+	    (ALLOCATING_MEMORY_FOR_NEW_ENV   
+	    	(string-append
+						    (add-line-to-code (PUSH new_env))
+						    (add-line-to-code (CALL "MALLOC"))
+						    (add-line-to-code (DROP "1"))
+						    (add-line-to-code (MOV "R1" "R0"))
+					    	)))
        (string-append
-        ALLOCATING_MEMORY_FOR_NEW_ENV
-        (add-line-to-code (CMP "FP" "2"))
+	    ALLOCATING_MEMORY_FOR_NEW_ENV
+	    (add-line-to-code (CMP "FP" "2"))
         (add-line-to-code (JUMP_LE lbl-cpy-program))
         (add-line-to-code (MOV "R2" (FPARG "0")))
         (add-line-to-code (MOV "R3" "0"))
@@ -2678,28 +2678,28 @@
         (add-label-to-code lbl-copy-parms-loop)
         (add-line-to-code (CMP "R5" (number->string num-params_)))
         (add-line-to-code (JUMP_GE lbl-end-copy-parms-loop))
-        (add-line-to-code (MOV "R4" "2"))
-        (add-line-to-code (ADD "R4" "R5"))
-        (add-line-to-code (MOV (INDD "R3" "R5") (FPARG "R4")))
-        (add-line-to-code (ADD "R5" "1"))
-        (add-line-to-code (JUMP lbl-copy-parms-loop))
-        (add-label-to-code lbl-end-copy-parms-loop)
-        (add-line-to-code (MOV (INDD "R1" "0") "R3"))
-        (add-line-to-code (PUSH "3"))
-        (add-line-to-code (CALL "MALLOC"))
-        (add-line-to-code (DROP "1"))
-        (add-line-to-code (MOV (INDD "R0" "0") "T_CLOSURE"))
-        (add-line-to-code (MOV (INDD "R0" "1") "R1"))
-        (add-line-to-code (MOV (INDD "R0" "2") (string-append "LABEL("lbl-code")")))
-        (add-line-to-code (JUMP lbl-exit))
-        (add-label-to-code lbl-code)
-        (add-line-to-code (PUSH "FP"))
-        (add-line-to-code (MOV "FP" "SP"))
-        (cond
+		(add-line-to-code (MOV "R4" "2"))
+		(add-line-to-code (ADD "R4" "R5"))
+		(add-line-to-code (MOV (INDD "R3" "R5") (FPARG "R4")))
+		(add-line-to-code (ADD "R5" "1"))
+		(add-line-to-code (JUMP lbl-copy-parms-loop))
+		(add-label-to-code lbl-end-copy-parms-loop)
+		(add-line-to-code (MOV (INDD "R1" "0") "R3"))
+		(add-line-to-code (PUSH "3"))
+		(add-line-to-code (CALL "MALLOC"))
+		(add-line-to-code (DROP "1"))
+		(add-line-to-code (MOV (INDD "R0" "0") "T_CLOSURE"))
+		(add-line-to-code (MOV (INDD "R0" "1") "R1"))
+		(add-line-to-code (MOV (INDD "R0" "2") (string-append "LABEL("lbl-code")")))
+		(add-line-to-code (JUMP lbl-exit))
+		(add-label-to-code lbl-code)
+		(add-line-to-code (PUSH "FP"))
+		(add-line-to-code (MOV "FP" "SP"))
+		(cond
           ((eq? lambda-type 'simple) 
            (string-append
             (code-gen body (+ size-env_ 1) (length parms-of-lambda) const-tab_ fvar-tab_ endlabel_)
-            ))
+           	))
           (else
            (let ((parms-len (number->string (length parms-of-lambda))))
              (string-append
@@ -2720,10 +2720,10 @@
               (add-line-to-code (DECR "R6"))
               (add-line-to-code (JUMP lbl-third-loop))
               (add-label-to-code lbl-end-third-loop)
-              (add-line-to-code (MOV "R2" "SP"))
-              (add-line-to-code (SUB "R2" (IMM "5")))
-              (add-line-to-code (SUB "R2" (IMM parms-len)))
-              (add-line-to-code (MOV (STACK "R2") "R1"))
+			  (add-line-to-code (MOV "R2" "SP"))
+			  (add-line-to-code (SUB "R2" (IMM "5")))
+			  (add-line-to-code (SUB "R2" (IMM parms-len)))
+			  (add-line-to-code (MOV (STACK "R2") "R1"))
               (code-gen body (+ size-env_ 1) (+ 1 (length parms-of-lambda)) const-tab_ fvar-tab_ endlabel_)
              ))))
          new-line
@@ -2741,12 +2741,12 @@
                   (argsNum (number->string (+ 1 (length args))))
                   )
                   (string-append 
-                    (add-line-to-code (PUSH "SOB_NIL"))
+                  	(add-line-to-code (PUSH "SOB_NIL"))
                     (apply string-append (map
                         (lambda (arg)
                             (string-append
                             (code-gen arg size-env_ num-params_ const-tab_ fvar-tab_ endlabel_)
-                                (add-line-to-code (PUSH "R0"))
+                            	(add-line-to-code (PUSH "R0"))
                                     ))
                         (reverse args)))
                     (add-line-to-code (PUSH (IMM (number->string (+ 1 (length args))))))
@@ -2782,16 +2782,16 @@
   (lambda (pe size-env num-params const-tab fvar-tab endlabel)
     (apply (lambda (pvar var min_)   
               (string-append        
-                (add-line-to-code (MOV "R0" (FPARG (number->string (+ min_ 2)))))         
+              	(add-line-to-code (MOV "R0" (FPARG (number->string (+ min_ 2)))))         
                )) pe)))
 
 (define code-gen-bvar
   (lambda (pe size-env num-params const-tab fvar-tab endlabel)
     (apply (lambda (bvar var maj min_)
             (string-append
-                (add-line-to-code (MOV "R0" (FPARG "0")))
-                (add-line-to-code (MOV "R0" (INDD "R0" (number->string maj))))
-                (add-line-to-code (MOV "R0" (INDD "R0" (number->string min_))))
+            	(add-line-to-code (MOV "R0" (FPARG "0")))
+            	(add-line-to-code (MOV "R0" (INDD "R0" (number->string maj))))
+            	(add-line-to-code (MOV "R0" (INDD "R0" (number->string min_))))
             )) pe
           )))
           
@@ -2799,7 +2799,7 @@
   (lambda (pe size-env num-params const-tab fvar-tab endlabel)
     (apply (lambda (fvar name)
                   (string-append  
-                    (add-line-to-code (MOV "R0" (IND (number->string (car (Get-associate-i name fvar-tab 2))))))        
+                  	(add-line-to-code (MOV "R0" (IND (number->string (car (Get-associate-i name fvar-tab 2))))))        
                    ))  pe)))     
 
 (define code-gen-define
@@ -2816,7 +2816,7 @@
            
          
 (define code-gen-const 
-    (lambda (pe size-env num-params const-tab fvar-tab endlabel)
+	(lambda (pe size-env num-params const-tab fvar-tab endlabel)
     (apply
           (lambda (const j)   
               (string-append  
@@ -2824,42 +2824,42 @@
                )) pe)))
                
 (define code-gen-set 
-    (lambda (pe size-env num-params const-tab fvar-tab endlabel)
-    
+	(lambda (pe size-env num-params const-tab fvar-tab endlabel)
+	
     (apply 
           (lambda (set var val)
     
           (cond ( (eq? (car var) 'pvar) 
-              (string-append
-            (code-gen val size-env num-params const-tab fvar-tab endlabel)
-            new-line
-            (add-line-to-code (MOV (FPARG (number->string (+ (caddr var) 2))) "R0"))
-            (add-line-to-code (MOV "R0" "SOB_VOID"))
-              ))
-        ( (eq? (car var) 'bvar)
-        
-              (string-append
-            (code-gen val size-env num-params const-tab fvar-tab endlabel)
-            new-line
-            (add-line-to-code (PUSH "R10"))
-            (add-line-to-code (MOV "R10" (FPARG "0")))
-            (add-line-to-code (MOV "R10" (INDD "R10" (number->string (caddr var)))))
-            (add-line-to-code (MOV (INDD "R10" (number->string (cadddr var))) "R0"))
-            (add-line-to-code (POP "R10"))
-            (add-line-to-code (MOV "R0" "SOB_VOID"))
-            ))
-        ((eq? (car var) 'fvar)
-              (string-append
-            (code-gen val size-env num-params const-tab fvar-tab endlabel)
-            new-line
-            (add-line-to-code (MOV (IND (number->string (car (Get-associate-i (cadr var) fvar-tab 2)))) "R0"))
-            (add-line-to-code (MOV "R0" "SOB_VOID"))
-              ))))
-         pe)))
+		      (string-append
+			(code-gen val size-env num-params const-tab fvar-tab endlabel)
+			new-line
+			(add-line-to-code (MOV (FPARG (number->string (+ (caddr var) 2))) "R0"))
+			(add-line-to-code (MOV "R0" "SOB_VOID"))
+		      ))
+		( (eq? (car var) 'bvar)
+		
+		      (string-append
+			(code-gen val size-env num-params const-tab fvar-tab endlabel)
+			new-line
+			(add-line-to-code (PUSH "R10"))
+			(add-line-to-code (MOV "R10" (FPARG "0")))
+			(add-line-to-code (MOV "R10" (INDD "R10" (number->string (caddr var)))))
+			(add-line-to-code (MOV (INDD "R10" (number->string (cadddr var))) "R0"))
+			(add-line-to-code (POP "R10"))
+			(add-line-to-code (MOV "R0" "SOB_VOID"))
+			))
+		((eq? (car var) 'fvar)
+		      (string-append
+			(code-gen val size-env num-params const-tab fvar-tab endlabel)
+			new-line
+			(add-line-to-code (MOV (IND (number->string (car (Get-associate-i (cadr var) fvar-tab 2)))) "R0"))
+			(add-line-to-code (MOV "R0" "SOB_VOID"))
+		      ))))
+		 pe)))
 
 
 (define code-gen-box 
-    (lambda (pe size-env num-params const-tab fvar-tab endlabel)
+	(lambda (pe size-env num-params const-tab fvar-tab endlabel)
     (apply 
           (lambda (box var) 
               (string-append
@@ -2887,7 +2887,7 @@
 
                
 (define code-gen-box-get
-    (lambda (pe size-env num-params const-tab fvar-tab endlabel)
+	(lambda (pe size-env num-params const-tab fvar-tab endlabel)
     (apply 
           (lambda (box-get var)
               (string-append
@@ -2985,50 +2985,50 @@
        new-line
        "JUMP(AFTER_COMPARE);" new-line
        "COMPARE_label:" new-line
-        "   PUSH(FP);" new-line
-        "   MOV(FP, SP);" new-line
-        "   PUSH(R1);" new-line
-        "   PUSH(R2);" new-line
-        "   PUSH(R3);" new-line
-        "   PUSH(R4);" new-line
-        "   PUSH(R5);" new-line
-        "   MOV(R1,FPARG(0));" new-line
-        "   MOV(R2,FPARG(1));" new-line
-        "   MOV(R3,INDD(R1,1));" new-line
-        "   MOV(R4,INDD(R2,1));" new-line
-        "   CMP(IND(R1),T_INTEGER);" new-line
-        "   JUMP_EQ(cmp_nums);" new-line
-        "   MOV(R1,INDD(R1,2));" new-line
-        "   second_check:"  new-line
-        "   CMP(IND(R2),T_INTEGER);" new-line
-        "   JUMP_EQ(Two_integers);" new-line
-        "   MOV(R2,(INDD(R2,2)));" new-line
-        "   General:" new-line
-        "   MUL(R3,R2); " new-line
-        "   MUL(R1,R4);"    new-line
-        "   CMP(R1,R3);" new-line
-        "   JUMP_EQ(nums_eq);"  new-line
-        "   JUMP_LT(nums_lt);" new-line
-        "   MOV(R0,1);" new-line
-        "   JUMP(nums_finish);" new-line
-        "   nums_eq:" new-line
-        "   MOV(R0,0);" new-line
-        "   JUMP(nums_finish);" new-line
-        "   nums_lt:" new-line
-        "       MOV(R0,-1);" new-line
-        "       JUMP(nums_finish);" new-line
-        "   cmp_nums:" new-line
-        "   MOV(R1,1);" new-line
-        "   JUMP(second_check);" new-line
-        "   Two_integers:" new-line
-        "   MOV(R2,1);" new-line 
-        "   JUMP(General);" new-line
-        "   nums_finish:" new-line
-        "   POP(R5);" new-line
-        "   POP(R4);" new-line
-        "   POP(R3);" new-line
-        "   POP(R2);" new-line
-        "   POP(R1);" new-line
+        "	PUSH(FP);" new-line
+        "	MOV(FP, SP);" new-line
+        "	PUSH(R1);" new-line
+        "	PUSH(R2);" new-line
+        "	PUSH(R3);" new-line
+        "	PUSH(R4);" new-line
+        "	PUSH(R5);" new-line
+        "	MOV(R1,FPARG(0));" new-line
+        "	MOV(R2,FPARG(1));" new-line
+        "	MOV(R3,INDD(R1,1));" new-line
+        "	MOV(R4,INDD(R2,1));" new-line
+        "	CMP(IND(R1),T_INTEGER);" new-line
+        "	JUMP_EQ(cmp_nums);" new-line
+        "	MOV(R1,INDD(R1,2));" new-line
+        "	second_check:"	new-line
+        " 	CMP(IND(R2),T_INTEGER);" new-line
+        "	JUMP_EQ(Two_integers);" new-line
+        "	MOV(R2,(INDD(R2,2)));" new-line
+        "	General:" new-line
+        "	MUL(R3,R2); " new-line
+        "	MUL(R1,R4);"	new-line
+        "	CMP(R1,R3);" new-line
+        "	JUMP_EQ(nums_eq);"	new-line
+        "	JUMP_LT(nums_lt);" new-line
+        "	MOV(R0,1);"	new-line
+        "	JUMP(nums_finish);" new-line
+        "	nums_eq:" new-line
+        "	MOV(R0,0);" new-line
+        "	JUMP(nums_finish);" new-line
+        "	nums_lt:" new-line
+        "		MOV(R0,-1);" new-line
+        "		JUMP(nums_finish);" new-line
+        "	cmp_nums:" new-line
+        "	MOV(R1,1);" new-line
+        "	JUMP(second_check);" new-line
+        "	Two_integers:" new-line
+        "	MOV(R2,1);" new-line 
+        "	JUMP(General);" new-line
+        "	nums_finish:" new-line
+        "	POP(R5);" new-line
+        "	POP(R4);" new-line
+        "	POP(R3);" new-line
+        "	POP(R2);" new-line
+        "	POP(R1);" new-line
         "POP(FP);"new-line
         "RETURN;"new-line
     " AFTER_COMPARE:" new-line
@@ -3082,273 +3082,273 @@
 (define generate-primitive-closure
     (lambda (lbl addr)   
             (string-append
-            "   PUSH(3);" new-line
-            "   CALL(MALLOC);" new-line
-            "   DROP(1);" new-line
-            "   MOV(INDD(R0,0),IMM(T_CLOSURE));" new-line 
-            "   MOV(INDD(R0,1),IMM(0));" new-line
-            "   MOV(INDD(R0,2),LABEL("lbl"));" new-line
-            "   MOV(IND(" (number->string addr) "),R0);" new-line
-            
-        ))) 
+			"	PUSH(3);" new-line
+			"	CALL(MALLOC);" new-line
+			"	DROP(1);" new-line
+			"	MOV(INDD(R0,0),IMM(T_CLOSURE));" new-line 
+			"	MOV(INDD(R0,1),IMM(0));" new-line
+			"	MOV(INDD(R0,2),LABEL("lbl"));" new-line
+			"	MOV(IND(" (number->string addr) "),R0);" new-line
+			
+		)))	
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;new impelementation
 (define primitive-apply
   (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'apply fvars-table))
-              (lbl-apply (label-marker "Lprim_apply") )
+	(lambda ()
+		(let ((addr (search-fvar 'apply fvars-table))
+		      (lbl-apply (label-marker "Lprim_apply") )
                       (lbl-closure_apply (label-marker "LPRIM_CLOSURE_apply") )
                       (lbl-end_apply (label-marker "LPRIM_end_apply") )
                       )
-            (string-append
-            "JUMP("lbl-closure_apply");" new-line
-            lbl-apply":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP,SP);" new-line
-            "MOV(R15,FPARG(-2)); \n"
-            "MOV(R4,FP); \n"
-            "SUB(R4,IMM(4)) \n; SUB(R4,FPARG(1)); \n"
-            "   MOV(R3,FPARG(2));" new-line ;  R3 holds the function 
-            "   MOV(R0,FPARG(3)); " new-line ;// R0 holds the list
-            "   MOV(R7,IMM(0));" new-line
+			(string-append
+			"JUMP("lbl-closure_apply");" new-line
+			lbl-apply":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP,SP);" new-line
+			"MOV(R15,FPARG(-2)); \n"
+			"MOV(R4,FP); \n"
+			"SUB(R4,IMM(4)) \n; SUB(R4,FPARG(1)); \n"
+			"	MOV(R3,FPARG(2));" new-line ;  R3 holds the function 
+			"	MOV(R0,FPARG(3)); " new-line ;// R0 holds the list
+			"	MOV(R7,IMM(0));" new-line
 
-            "Lprim_apply_list_loop:" new-line
-            "   CMP(R0,SOB_NIL);" new-line
-            "   JUMP_EQ(Lend_apply_list_loop);" new-line
-            "   MOV(R1,INDD(R0,1));" new-line
-            "   PUSH(R1);" new-line
-            "   MOV(R0,INDD(R0,2));" new-line
-            "   ADD(R7,IMM(1));" new-line
-            "   JUMP(Lprim_apply_list_loop);" new-line
+			"Lprim_apply_list_loop:" new-line
+			"	CMP(R0,SOB_NIL);" new-line
+			"	JUMP_EQ(Lend_apply_list_loop);" new-line
+			"	MOV(R1,INDD(R0,1));" new-line
+			"	PUSH(R1);" new-line
+			"	MOV(R0,INDD(R0,2));" new-line
+			"	ADD(R7,IMM(1));" new-line
+			"	JUMP(Lprim_apply_list_loop);" new-line
 
-            "Lend_apply_list_loop:" new-line
+			"Lend_apply_list_loop:" new-line
                         "       PUSH(SOB_NIL); \n"
-            "   MOV(R5,SP);" new-line 
-            "   SUB(R5,IMM(1));" new-line
-            "MOV(R9,FP);\n"
+			"	MOV(R5,SP);" new-line 
+			"	SUB(R5,IMM(1));" new-line
+			"MOV(R9,FP);\n"
 
-            "Lreverse_params:" new-line
-            "   CMP(R9,R5);" new-line
-            "   JUMP_GE(Lapply_in_tp);" new-line
-            "   MOV(R6,STACK(R5));" new-line
-            "   MOV(STACK(R5),STACK(R9));" new-line
-            "   MOV(STACK(R9),R6);" new-line
-            "   SUB(R5,IMM(1));" new-line
-            "   ADD(R9,IMM(1));" new-line
-            "   JUMP(Lreverse_params);" new-line
+			"Lreverse_params:" new-line
+			"	CMP(R9,R5);" new-line
+			"	JUMP_GE(Lapply_in_tp);" new-line
+			"	MOV(R6,STACK(R5));" new-line
+			"	MOV(STACK(R5),STACK(R9));" new-line
+			"	MOV(STACK(R9),R6);" new-line
+			"	SUB(R5,IMM(1));" new-line
+			"	ADD(R9,IMM(1));" new-line
+			"	JUMP(Lreverse_params);" new-line
 
-            "Lapply_in_tp:" new-line
-            "PUSH(R7+1);\n"
-            "PUSH(INDD(R3,1));\n"
-            "PUSH(FPARG(-1));\n"
-            "MOV(R5,FP);\n"
-        
-            "Lapply_in_tp_loop:" new-line
-                "   CMP(R5,SP);" new-line
-                "   JUMP_EQ(Lend_prim_apply);" new-line
-                "   MOV(STACK(R4),STACK(R5));" new-line
-                "   ADD(R4,IMM(1));" new-line
-                "   ADD(R5,IMM(1));" new-line
-                "
-                JUMP(Lapply_in_tp_loop);" new-line
+			"Lapply_in_tp:" new-line
+			"PUSH(R7+1);\n"
+			"PUSH(INDD(R3,1));\n"
+			"PUSH(FPARG(-1));\n"
+			"MOV(R5,FP);\n"
+		
+			"Lapply_in_tp_loop:" new-line
+				"	CMP(R5,SP);" new-line
+				"	JUMP_EQ(Lend_prim_apply);" new-line
+				"	MOV(STACK(R4),STACK(R5));" new-line
+				"	ADD(R4,IMM(1));" new-line
+				"	ADD(R5,IMM(1));" new-line
+				"
+				JUMP(Lapply_in_tp_loop);" new-line
 
-            "Lend_prim_apply:" new-line
-            "MOV(SP, R4); \n"
-            "MOV(FP,R15); \n" 
-            "   JUMPA(INDD(R3,2));" new-line
-            "POP(FP);\n"
-            "RETURN;\n"
-            lbl-closure_apply":"  new-line
+			"Lend_prim_apply:" new-line
+			"MOV(SP, R4); \n"
+			"MOV(FP,R15); \n" 
+			"	JUMPA(INDD(R3,2));" new-line
+			"POP(FP);\n"
+			"RETURN;\n"
+			lbl-closure_apply":"  new-line
                         (generate-primitive-closure lbl-apply addr) new-line)))))
 
 (define primitive-symbol-string
 (lambda (constants-table fvars-table frst_sym_address)
   (lambda ()
-        (let 
-             ((addr (search-fvar 'symbol->string fvars-table))
+		(let 
+		     ((addr (search-fvar 'symbol->string fvars-table))
                       (lbl-symbol-string (label-marker "Lprim_symbolstringr") )
                       (lbl-closure_symbol-string (label-marker "LPRIM_CLOSURE_symbol_string") )
                       (lbl-end_symbol-string (label-marker "LPRIM_end_symbolstring") )
                       )
-            (string-append
-            "JUMP("lbl-closure_symbol-string");" new-line
-            lbl-symbol-string":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2));" new-line
-            "   MOV(R0,INDD(R0,1));" new-line
-            lbl-end_symbol-string":" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-                        
-            lbl-closure_symbol-string":" new-line
+			(string-append
+			"JUMP("lbl-closure_symbol-string");" new-line
+			lbl-symbol-string":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2));" new-line
+			"	MOV(R0,INDD(R0,1));" new-line
+			lbl-end_symbol-string":" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+						
+			lbl-closure_symbol-string":" new-line
                         (generate-primitive-closure lbl-symbol-string addr) new-line
-            )))))
+			)))))
 
 (define primitive-number
 (lambda (constants-table fvars-table frst_sym_address)
   (lambda ()
-        (let 
-             ((addr (search-fvar 'number? fvars-table))
+		(let 
+		     ((addr (search-fvar 'number? fvars-table))
                       (lbl-number (label-marker "Lprim_number") )
                       (lbl-closure_number (label-marker "LPRIM_CLOSURE_number") )
                       (lbl-end_number (label-marker "LPRIM_end_number") )
                       )
-            (string-append
-            "JUMP("lbl-closure_number");" new-line
-            lbl-number":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,SOB_BOOLEAN_TRUE);" new-line
-            "   MOV(R1,FPARG(2));" new-line
-            "   CMP(IND(R1),T_INTEGER);" new-line
-            "   JUMP_EQ("lbl-end_number");" new-line
-            "   CMP(IND(R1),T_FRACTION);" new-line
-            "   JUMP_EQ("lbl-end_number");" new-line
-            "   MOV(R0,SOB_BOOLEAN_FALSE);" new-line
-        
-            lbl-end_number":" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-                        
-            lbl-closure_number":" new-line
+			(string-append
+			"JUMP("lbl-closure_number");" new-line
+			lbl-number":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,SOB_BOOLEAN_TRUE);" new-line
+			"	MOV(R1,FPARG(2));" new-line
+			"	CMP(IND(R1),T_INTEGER);" new-line
+			"	JUMP_EQ("lbl-end_number");" new-line
+			"	CMP(IND(R1),T_FRACTION);" new-line
+			"	JUMP_EQ("lbl-end_number");" new-line
+			"	MOV(R0,SOB_BOOLEAN_FALSE);" new-line
+		
+			lbl-end_number":" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+						
+			lbl-closure_number":" new-line
                         (generate-primitive-closure lbl-number addr) new-line
-            )))))
+			)))))
 
 (define primitive-remainder
 (lambda (constants-table fvars-table frst_sym_address)
   (lambda ()
-        (let 
-             ((addr (search-fvar 'remainder fvars-table))
+		(let 
+		     ((addr (search-fvar 'remainder fvars-table))
                       (lbl-remainder (label-marker "Lprim_remainder") )
                       (lbl-closure_remainder (label-marker "LPRIM_CLOSURE_remainder") )
                       (lbl-end_remainder (label-marker "LPRIM_end_remainder") )
                       )
-            (string-append
-            "JUMP("lbl-closure_remainder");" new-line
-            lbl-remainder":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2));" new-line
-            "   MOV(R1,FPARG(3));" new-line
-            "   MOV(R0,INDD(R0,1)); " new-line
-            "   MOV(R1,INDD(R1,1));" new-line
-            "   REM(R0,R1);" new-line
-            "   PUSH(R0);" new-line
-            "   CALL(MAKE_SOB_INTEGER);" new-line
-            "   DROP(1);" new-line
-            lbl-end_remainder":" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-                        
-            lbl-closure_remainder":" new-line
+			(string-append
+			"JUMP("lbl-closure_remainder");" new-line
+			lbl-remainder":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2));" new-line
+			"	MOV(R1,FPARG(3));" new-line
+			"	MOV(R0,INDD(R0,1)); " new-line
+			"	MOV(R1,INDD(R1,1));" new-line
+			"	REM(R0,R1);" new-line
+			"	PUSH(R0);" new-line
+			"	CALL(MAKE_SOB_INTEGER);" new-line
+			"	DROP(1);" new-line
+			lbl-end_remainder":" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+						
+			lbl-closure_remainder":" new-line
                         (generate-primitive-closure lbl-remainder addr) new-line
-            )))))
+			)))))
 
 
 
 (define primitive-rational
 (lambda (constants-table fvars-table frst_sym_address)
   (lambda ()
-        (let 
-             ((addr (search-fvar 'rational? fvars-table))
+		(let 
+		     ((addr (search-fvar 'rational? fvars-table))
                       (lbl-rational (label-marker "Lprim_rational") )
                       (lbl-closure_rational (label-marker "LPRIM_CLOSURE_rational") )
                       (lbl-end_rational (label-marker "LPRIM_end_rational") )
                       )
-            (string-append
-            "JUMP("lbl-closure_rational");" new-line
-            lbl-rational":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,SOB_BOOLEAN_TRUE);" new-line
-            "   MOV(R1,FPARG(2));" new-line
-            "   CMP(IND(R1),T_INTEGER);" new-line
-            "   JUMP_EQ("lbl-end_rational");" new-line
-            "   CMP(IND(R1),T_FRACTION);" new-line
-            "   JUMP_EQ("lbl-end_rational");" new-line
-            "   MOV(R0,SOB_BOOLEAN_FALSE);" new-line
-            lbl-end_rational":" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-                        
-            lbl-closure_rational":" new-line
+			(string-append
+			"JUMP("lbl-closure_rational");" new-line
+			lbl-rational":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,SOB_BOOLEAN_TRUE);" new-line
+			"	MOV(R1,FPARG(2));" new-line
+			"	CMP(IND(R1),T_INTEGER);" new-line
+			"	JUMP_EQ("lbl-end_rational");" new-line
+			"	CMP(IND(R1),T_FRACTION);" new-line
+			"	JUMP_EQ("lbl-end_rational");" new-line
+			"	MOV(R0,SOB_BOOLEAN_FALSE);" new-line
+			lbl-end_rational":" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+						
+			lbl-closure_rational":" new-line
                         (generate-primitive-closure lbl-rational addr) new-line
-            )))))
+			)))))
 
 (define primitive-numerator
 (lambda (constants-table fvars-table frst_sym_address)
   (lambda ()
-        (let 
-             ((addr (search-fvar 'numerator fvars-table))
+		(let 
+		     ((addr (search-fvar 'numerator fvars-table))
                       (lbl-numerator (label-marker "Lprim_numerator") )
                       (lbl-closure_numerator (label-marker "LPRIM_CLOSURE_numerator") )
                      
                       )
-            (string-append
-            "JUMP("lbl-closure_numerator");" new-line
-            lbl-numerator":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            
-            
-            "   MOV(R0,FPARG(2));" new-line
-            "   MOV(R0,INDD(R0,1));"new-line
-            "   PUSH(R0);" new-line
-            "   CALL(MAKE_SOB_INTEGER);" new-line
-            "   DROP(1);" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-                        
-            lbl-closure_numerator":" new-line
+			(string-append
+			"JUMP("lbl-closure_numerator");" new-line
+			lbl-numerator":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			
+			
+			"  	MOV(R0,FPARG(2));" new-line
+			" 	MOV(R0,INDD(R0,1));"new-line
+			" 	PUSH(R0);" new-line
+			" 	CALL(MAKE_SOB_INTEGER);" new-line
+			" 	DROP(1);" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+						
+			lbl-closure_numerator":" new-line
                         (generate-primitive-closure lbl-numerator addr) new-line
-            )))))
+			)))))
 
 (define primitive-denominator
 (lambda (constants-table fvars-table frst_sym_address)
   (lambda ()
-        (let 
-             ((addr (search-fvar 'denominator fvars-table))
+		(let 
+		     ((addr (search-fvar 'denominator fvars-table))
                       (lbl-denominator (label-marker "Lprim_denominator") )
                       (IntegerArg (label-marker "L_integer") )
                       (EndLabel (label-marker "L_end_denom") )
                       (lbl-closure_denominator (label-marker "LPRIM_CLOSURE_denominator") )
                      
                       )
-            (string-append
-            "JUMP("lbl-closure_denominator");" new-line
-            lbl-denominator":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2));" new-line
-            "CMP(IND(R0), T_INTEGER); \n"
-            "JUMP_EQ("IntegerArg"); \n"
-            
-            "   MOV(R0,INDD(R0,2));"new-line
-            "   PUSH(R0);" new-line
-            "   CALL(MAKE_SOB_INTEGER);" new-line
-            "JUMP("EndLabel"); \n"
-            
-            IntegerArg":" new-line
-            "   MOV(R0,1);"new-line
-            "   PUSH(R0);" new-line
-            "   CALL(MAKE_SOB_INTEGER);" new-line
-            EndLabel":" new-line
-            "   DROP(1);" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-            lbl-closure_denominator":" new-line
+			(string-append
+			"JUMP("lbl-closure_denominator");" new-line
+			lbl-denominator":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"  	MOV(R0,FPARG(2));" new-line
+			"CMP(IND(R0), T_INTEGER); \n"
+			"JUMP_EQ("IntegerArg"); \n"
+			
+			" 	MOV(R0,INDD(R0,2));"new-line
+			" 	PUSH(R0);" new-line
+			" 	CALL(MAKE_SOB_INTEGER);" new-line
+			"JUMP("EndLabel"); \n"
+			
+			IntegerArg":" new-line
+			" 	MOV(R0,1);"new-line
+			" 	PUSH(R0);" new-line
+			" 	CALL(MAKE_SOB_INTEGER);" new-line
+			EndLabel":" new-line
+			" 	DROP(1);" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+			lbl-closure_denominator":" new-line
                         (generate-primitive-closure lbl-denominator addr) new-line
-            )))))
+			)))))
 
 (define primitive-mul
 (lambda (constants-table fvars-table frst_sym_address)
   (lambda ()
-        (let 
-             ((addr (search-fvar '* fvars-table))
+		(let 
+		     ((addr (search-fvar '* fvars-table))
                       (lbl-mul (label-marker "Lprim_mul") )
                       (lbl-closure_mul (label-marker "LPRIM_CLOSURE_mul") )
                       (lbl-mul-loop (label-marker "Lprimitive_minus_loop") )
@@ -3356,61 +3356,61 @@
                       (lbl-mul-AfterUpdate (label-marker "Lprimitive_mul_AfterUpdate") )
                       (lbl-mul-end (label-marker "Lprimitive_mul_end") )     
                       )
-            (string-append
-            "JUMP("lbl-closure_mul");" new-line
-            lbl-mul new-line":"
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "PUSH(R1);"new-line
-            "PUSH(R2);"new-line
-            "PUSH(R3);"new-line
-            "PUSH(R4);"new-line
-            "PUSH(R5);"new-line
-            "PUSH(R6);"new-line
-            "PUSH(R7);"new-line
-            "  MOV(R1,IMM(1));" new-line
-            "    MOV(R2,IMM(1));" new-line
-            "    MOV(R5,IMM(0));" new-line  
-             lbl-mul-loop":" new-line
-            "   CMP(R5,FPARG(1)-1);" new-line
-            "   JUMP_EQ("lbl-mul-end");"new-line
-            "   MOV(R6,FPARG(R5+2));"new-line
-            "   CMP(IND(R6),T_INTEGER);"new-line
-            "   JUMP_EQ("lbl-mul-intsToFracs");"new-line
-            "   MOV(R3,INDD(R6,IMM(1)));"new-line
-            "   MOV(R4,INDD(R6,IMM(2)));"new-line
-             lbl-mul-AfterUpdate":"  new-line
-            "   MUL(R1,R3);"new-line
-            "   MUL(R2,R4);"new-line
-            "   INCR(R5);"new-line
-            "   JUMP("lbl-mul-loop");"new-line
-            lbl-mul-intsToFracs":"  new-line
-            "   MOV(R3,INDD(R6,1));"new-line
-            "   MOV(R4,IMM(1));"new-line
-            "   JUMP("lbl-mul-AfterUpdate");"new-line
-            lbl-mul-end":" new-line
-            "   PUSH(R2);"new-line
-            "   PUSH(R1);"new-line
-            "   CALL(MAKE_SOB_FRACTION);"new-line
-            "   DROP(2);"new-line   
-                  "POP(R7);"new-line
-                  "POP(R6);"new-line
-                  "POP(R5);"new-line
-                  "POP(R4);"new-line
-                  "POP(R3);"new-line
-                  "POP(R2);"new-line
-                  "POP(R1);"new-line
-                  " POP(FP);" new-line
-            "   RETURN;" new-line
-            lbl-closure_mul":" new-line
+			(string-append
+			"JUMP("lbl-closure_mul");" new-line
+			lbl-mul new-line":"
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"PUSH(R1);"new-line
+			"PUSH(R2);"new-line
+			"PUSH(R3);"new-line
+			"PUSH(R4);"new-line
+			"PUSH(R5);"new-line
+			"PUSH(R6);"new-line
+			"PUSH(R7);"new-line
+			"  MOV(R1,IMM(1));" new-line
+			"    MOV(R2,IMM(1));" new-line
+			"    MOV(R5,IMM(0));" new-line	
+			 lbl-mul-loop":" new-line
+			"	CMP(R5,FPARG(1)-1);" new-line
+			"	JUMP_EQ("lbl-mul-end");"new-line
+			"	MOV(R6,FPARG(R5+2));"new-line
+			"	CMP(IND(R6),T_INTEGER);"new-line
+			"	JUMP_EQ("lbl-mul-intsToFracs");"new-line
+			"	MOV(R3,INDD(R6,IMM(1)));"new-line
+			"	MOV(R4,INDD(R6,IMM(2)));"new-line
+			 lbl-mul-AfterUpdate":"  new-line
+			"	MUL(R1,R3);"new-line
+			"	MUL(R2,R4);"new-line
+			"	INCR(R5);"new-line
+			"	JUMP("lbl-mul-loop");"new-line
+			lbl-mul-intsToFracs":"  new-line
+			"	MOV(R3,INDD(R6,1));"new-line
+			"	MOV(R4,IMM(1));"new-line
+			"	JUMP("lbl-mul-AfterUpdate");"new-line
+			lbl-mul-end":" new-line
+			"	PUSH(R2);"new-line
+			"	PUSH(R1);"new-line
+			"	CALL(MAKE_SOB_FRACTION);"new-line
+			"	DROP(2);"new-line	
+			      "POP(R7);"new-line
+			      "POP(R6);"new-line
+			      "POP(R5);"new-line
+			      "POP(R4);"new-line
+			      "POP(R3);"new-line
+			      "POP(R2);"new-line
+			      "POP(R1);"new-line
+			      "	POP(FP);" new-line
+			"	RETURN;" new-line
+			lbl-closure_mul":" new-line
                         (generate-primitive-closure lbl-mul addr) new-line
-            )))))
+			)))))
 
 (define primitive-div
 (lambda (constants-table fvars-table frst_sym_address)
   (lambda ()
-        (let 
-             ((addr (search-fvar '/ fvars-table))
+		(let 
+		     ((addr (search-fvar '/ fvars-table))
                       (lbl-div (label-marker "Lprim_div")  )
                       (lbl-closure_div (label-marker "LPRIM_CLOSURE_div")  )
                       (lbl-div-loop (label-marker "Lprimitive_div_loop")  )
@@ -3420,68 +3420,68 @@
                       (lbl-div-end (label-marker "Lprimitive_div_end")  )  
                       (lbl-div-Integer (label-marker "L_Integer")  )
                       )
-            (string-append
-            "JUMP("lbl-closure_div");" new-line
-            lbl-div new-line":"
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R5,FPARG(2));" new-line
-            "   MOV(R1,INDD(R5,1));" new-line
-            "   MOV(R2,IMM(1));" new-line
-            "   CMP(IND(R5),T_INTEGER);" new-line
-            "   JUMP_EQ("lbl-div-Integer");" new-line
-            "   MOV(R2,INDD(R5,2));" new-line
-            lbl-div-Integer":" new-line
-            "   CMP(FPARG(1)-1,1);" new-line
-            "   JUMP_EQ("lbl-div-One_arg");" new-line
-            "   MOV(R5,1);" new-line
-             lbl-div-loop":" new-line
-            "   CMP(R5,FPARG(1)-1);" new-line
-            "   JUMP_EQ("lbl-div-end");"new-line
-            "   MOV(R6,FPARG(R5+2));"new-line
-            "   CMP(IND(R6),T_INTEGER);"new-line
-            "   JUMP_EQ("lbl-div-intsToFracs");"new-line
-            "   MOV(R3,INDD(R6,1));"new-line
-            "   MOV(R4,INDD(R6,2));"new-line
-             lbl-div-AfterUpdate":"  new-line
-            "   MUL(R1,R4);"new-line
-            "   MUL(R2,R3);"new-line
-            "   INCR(R5);"new-line
-            "   JUMP("lbl-div-loop");"new-line
-            lbl-div-intsToFracs":"  new-line
-            "   MOV(R3,INDD(R6,1));"new-line
-            "   MOV(R4,IMM(1));"new-line
-            "   JUMP("lbl-div-AfterUpdate");"new-line
+			(string-append
+			"JUMP("lbl-closure_div");" new-line
+			lbl-div new-line":"
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R5,FPARG(2));" new-line
+			"	MOV(R1,INDD(R5,1));" new-line
+			"	MOV(R2,IMM(1));" new-line
+			"	CMP(IND(R5),T_INTEGER);" new-line
+			"	JUMP_EQ("lbl-div-Integer");" new-line
+			"	MOV(R2,INDD(R5,2));" new-line
+			lbl-div-Integer":" new-line
+			"	CMP(FPARG(1)-1,1);" new-line
+			"	JUMP_EQ("lbl-div-One_arg");" new-line
+			"	MOV(R5,1);" new-line
+			 lbl-div-loop":" new-line
+			"	CMP(R5,FPARG(1)-1);" new-line
+			"	JUMP_EQ("lbl-div-end");"new-line
+			"	MOV(R6,FPARG(R5+2));"new-line
+			"	CMP(IND(R6),T_INTEGER);"new-line
+			"	JUMP_EQ("lbl-div-intsToFracs");"new-line
+			"	MOV(R3,INDD(R6,1));"new-line
+			"	MOV(R4,INDD(R6,2));"new-line
+			 lbl-div-AfterUpdate":"  new-line
+			"	MUL(R1,R4);"new-line
+			"	MUL(R2,R3);"new-line
+			"	INCR(R5);"new-line
+			"	JUMP("lbl-div-loop");"new-line
+			lbl-div-intsToFracs":"  new-line
+			"	MOV(R3,INDD(R6,1));"new-line
+			"	MOV(R4,IMM(1));"new-line
+			"	JUMP("lbl-div-AfterUpdate");"new-line
 
-            lbl-div-end":" new-line
-            "   PUSH(R2);"new-line
-            "   PUSH(R1);"new-line
-            "   CALL(MAKE_SOB_FRACTION);"new-line
-            "   DROP(2);"new-line       
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-            
-            
-            lbl-div-One_arg":"  new-line
-            "CMP(IND(R5),T_FRACTION);" new-line
-            "JUMP_NE(L_int);" new-line
-            "MOV(R1,INDD(R5,2));"
-            "MOV(R2,INDD(R5,1));"
-            "JUMP("lbl-div-end");" new-line
-            "L_int:" new-line
-            "MOV(R1,IMM(1));" new-line
-            "MOV(R2,INDD(R5,1));" new-line
-            "JUMP("lbl-div-end");" new-line
+			lbl-div-end":" new-line
+			"	PUSH(R2);"new-line
+			"	PUSH(R1);"new-line
+			"	CALL(MAKE_SOB_FRACTION);"new-line
+			"	DROP(2);"new-line		
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+			
+			
+			lbl-div-One_arg":"  new-line
+			"CMP(IND(R5),T_FRACTION);" new-line
+			"JUMP_NE(L_int);" new-line
+			"MOV(R1,INDD(R5,2));"
+			"MOV(R2,INDD(R5,1));"
+			"JUMP("lbl-div-end");" new-line
+			"L_int:" new-line
+			"MOV(R1,IMM(1));" new-line
+			"MOV(R2,INDD(R5,1));" new-line
+			"JUMP("lbl-div-end");" new-line
 
-            lbl-closure_div":" new-line
+			lbl-closure_div":" new-line
                         (generate-primitive-closure lbl-div addr) new-line
-            )))))
+			)))))
 
 (define primitive-minus
 (lambda (constants-table fvars-table frst_sym_address)
   (lambda ()
-        (let 
-             ((addr (search-fvar '- fvars-table))
+		(let 
+		     ((addr (search-fvar '- fvars-table))
                       (lbl-minus (label-marker "Lprim_minus")  )
                       (lbl-closure_minus (label-marker "LPRIM_CLOSURE_minus")  )
                       (lbl-minus-loop (label-marker "Lprimitive_minus_loop")  )
@@ -3492,69 +3492,69 @@
                       (lbl-minus-Integer (label-marker "L_IntegerR")  )
                       )
                     (string-append
-            "JUMP("lbl-closure_minus");" new-line
-            lbl-minus":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R5,FPARG(2));" new-line
-            "   MOV(R1,INDD(R5,1));" new-line
-            "   MOV(R2,IMM(1));" new-line
-            "   CMP(IND(R5),T_INTEGER);" new-line
-            "   JUMP_EQ("lbl-minus-Integer");" new-line
-            "   MOV(R2,INDD(R5,2));" new-line
-            lbl-minus-Integer":" new-line
-            "   CMP(FPARG(1)-1,1);" new-line
-            "   JUMP_EQ("lbl-minus-One_arg");" new-line
-            "   MOV(R5,1);" new-line
-             lbl-minus-loop":" new-line
-            "   CMP(R5,FPARG(1)-1);" new-line
-            "   JUMP_EQ("lbl-minus-end");"new-line
-            "   MOV(R6,FPARG(R5+2));"new-line
-            "   CMP(IND(R6),T_INTEGER);"new-line
-            "   JUMP_EQ("lbl-minus-intsToFracs");"new-line
-            "   MOV(R3,INDD(R6,1));"new-line
-            "   MOV(R4,INDD(R6,2));"new-line
-             lbl-minus-AfterUpdate":"  new-line
-            "   MUL(R1,R4);"new-line
-            "   MUL(R4,R2);"new-line
-            "   MUL(R3,R2);"new-line
-            "   SUB(R1,R3);"new-line
-            "   MOV(R2,R4);"new-line
-            "   INCR(R5);"new-line
-            
-            "   JUMP("lbl-minus-loop");"new-line
-            lbl-minus-intsToFracs":"  new-line
-            "   MOV(R3,INDD(R6,1));"new-line
-            "   MOV(R4,IMM(1));"new-line
-            "   JUMP("lbl-minus-AfterUpdate");"new-line
+			"JUMP("lbl-closure_minus");" new-line
+			lbl-minus":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R5,FPARG(2));" new-line
+			"	MOV(R1,INDD(R5,1));" new-line
+			"	MOV(R2,IMM(1));" new-line
+			"	CMP(IND(R5),T_INTEGER);" new-line
+			"	JUMP_EQ("lbl-minus-Integer");" new-line
+			"	MOV(R2,INDD(R5,2));" new-line
+			lbl-minus-Integer":" new-line
+			"	CMP(FPARG(1)-1,1);" new-line
+			"	JUMP_EQ("lbl-minus-One_arg");" new-line
+			"	MOV(R5,1);" new-line
+			 lbl-minus-loop":" new-line
+			"	CMP(R5,FPARG(1)-1);" new-line
+			"	JUMP_EQ("lbl-minus-end");"new-line
+			"	MOV(R6,FPARG(R5+2));"new-line
+			"	CMP(IND(R6),T_INTEGER);"new-line
+			"	JUMP_EQ("lbl-minus-intsToFracs");"new-line
+			"	MOV(R3,INDD(R6,1));"new-line
+			"	MOV(R4,INDD(R6,2));"new-line
+			 lbl-minus-AfterUpdate":"  new-line
+			"	MUL(R1,R4);"new-line
+			"	MUL(R4,R2);"new-line
+			"	MUL(R3,R2);"new-line
+			"	SUB(R1,R3);"new-line
+			"	MOV(R2,R4);"new-line
+			"	INCR(R5);"new-line
+			
+			"	JUMP("lbl-minus-loop");"new-line
+			lbl-minus-intsToFracs":"  new-line
+			"	MOV(R3,INDD(R6,1));"new-line
+			"	MOV(R4,IMM(1));"new-line
+			"	JUMP("lbl-minus-AfterUpdate");"new-line
 
-            lbl-minus-end":" new-line
-            "   PUSH(R2);"new-line
-            "   PUSH(R1);"new-line
-            "   CALL(MAKE_SOB_FRACTION);"new-line
-            "   DROP(2);"new-line       
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-            
-            
-            lbl-minus-One_arg":"  new-line
-            "CMP(IND(R5),T_FRACTION);" new-line
-            "JUMP_NE(L_inttt);" new-line
-            "MUL(R1,-1);" new-line
-            "JUMP("lbl-minus-end");" new-line
-            "L_inttt:" new-line
-            "MUL(R1,-1);" new-line
-            "MOV(R2,IMM(1));" new-line
-            "JUMP("lbl-minus-end");" new-line
-            
-            lbl-closure_minus":" new-line
+			lbl-minus-end":" new-line
+			"	PUSH(R2);"new-line
+			"	PUSH(R1);"new-line
+			"	CALL(MAKE_SOB_FRACTION);"new-line
+			"	DROP(2);"new-line		
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+			
+			
+			lbl-minus-One_arg":"  new-line
+			"CMP(IND(R5),T_FRACTION);" new-line
+			"JUMP_NE(L_inttt);" new-line
+			"MUL(R1,-1);" new-line
+			"JUMP("lbl-minus-end");" new-line
+			"L_inttt:" new-line
+			"MUL(R1,-1);" new-line
+			"MOV(R2,IMM(1));" new-line
+			"JUMP("lbl-minus-end");" new-line
+			
+			lbl-closure_minus":" new-line
                         (generate-primitive-closure lbl-minus addr) new-line)))))
 
 (define primitive-plus
 (lambda (constants-table fvars-table frst_sym_address)
   (lambda ()
-        (let 
-             ((addr (search-fvar '+ fvars-table))
+		(let 
+		     ((addr (search-fvar '+ fvars-table))
                       (lbl-plus (label-marker "Lprim_PLUS")  )
                       (lbl-closure_plus  (label-marker "LPRIM_CLOSURE_PLUS")  )
                       (lbl-plusl-loop (label-marker "Lprimitive_plusl_loop")  )
@@ -3562,58 +3562,58 @@
                       (lbl-plus-AfterUpdate (label-marker "Lprimitive_plus_AfterUpdate")  )
                       (lbl-plus-end (label-marker "Lprimitive_plus_end")  )     
                       )
-        
-            (string-append
-            "JUMP("lbl-closure_plus");" new-line
-            lbl-plus":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            
-            
-            "   MOV(R1,0);" new-line
-            "   MOV(R2,1);" new-line
-            "   MOV(R5,0);"new-line
-            "   MOV(R8,R5);"new-line
-            "   ADD(R8,2);"new-line
-             lbl-plusl-loop":" new-line
-            "   CMP(R5,FPARG(1)-1);" new-line   
-            "   JUMP_EQ("lbl-plus-end");"new-line
-            "   MOV(R6,FPARG(R8));"new-line
-            "   CMP(IND(R6),T_INTEGER);"new-line
-            "   JUMP_EQ("lbl-plus-intsToFracs");"new-line
-            "   MOV(R3,INDD(R6,1));"new-line
-            "   MOV(R4,INDD(R6,2));"new-line
-             lbl-plus-AfterUpdate":"  new-line
-            "   MUL(R1,R4);"new-line
-            "   MUL(R4,R2);"new-line
-            "   MUL(R3,R2);"new-line
-            "   ADD(R1,R3);"new-line
-            "   MOV(R2,R4);"new-line
-            "   INCR(R5);"new-line
-            "   INCR(R8);"new-line
-            "   JUMP("lbl-plusl-loop");"new-line
-            lbl-plus-intsToFracs":"  new-line
-            "   MOV(R3,INDD(R6,1));"new-line
-            "   MOV(R4,IMM(1));"new-line
-            "   JUMP("lbl-plus-AfterUpdate");"new-line
+		
+			(string-append
+			"JUMP("lbl-closure_plus");" new-line
+			lbl-plus":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			
+			
+			"	MOV(R1,0);" new-line
+			"	MOV(R2,1);" new-line
+			"	MOV(R5,0);"new-line
+			"	MOV(R8,R5);"new-line
+			"	ADD(R8,2);"new-line
+			 lbl-plusl-loop":" new-line
+			"	CMP(R5,FPARG(1)-1);" new-line	
+			"	JUMP_EQ("lbl-plus-end");"new-line
+			"	MOV(R6,FPARG(R8));"new-line
+			"	CMP(IND(R6),T_INTEGER);"new-line
+			"	JUMP_EQ("lbl-plus-intsToFracs");"new-line
+			"	MOV(R3,INDD(R6,1));"new-line
+			"	MOV(R4,INDD(R6,2));"new-line
+			 lbl-plus-AfterUpdate":"  new-line
+			"	MUL(R1,R4);"new-line
+			"	MUL(R4,R2);"new-line
+			"	MUL(R3,R2);"new-line
+			"	ADD(R1,R3);"new-line
+			"	MOV(R2,R4);"new-line
+			"	INCR(R5);"new-line
+			"	INCR(R8);"new-line
+			"	JUMP("lbl-plusl-loop");"new-line
+			lbl-plus-intsToFracs":"  new-line
+			"	MOV(R3,INDD(R6,1));"new-line
+			"	MOV(R4,IMM(1));"new-line
+			"	JUMP("lbl-plus-AfterUpdate");"new-line
 
-            lbl-plus-end":" new-line
-            "   PUSH(R2);"new-line
-            "   PUSH(R1);"new-line
-            "   CALL(MAKE_SOB_FRACTION);"new-line
-            "   DROP(2);"new-line       
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-            lbl-closure_plus":" new-line
+			lbl-plus-end":" new-line
+			"	PUSH(R2);"new-line
+			"	PUSH(R1);"new-line
+			"	CALL(MAKE_SOB_FRACTION);"new-line
+			"	DROP(2);"new-line		
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+			lbl-closure_plus":" new-line
                         (generate-primitive-closure lbl-plus addr) new-line
-            )))))
+			)))))
 
 
 (define primitive-numbers-equal
 (lambda (constants-table fvars-table frst_sym_address)
   (lambda ()
-        (let 
-             ((addr (search-fvar '= fvars-table))
+		(let 
+		     ((addr (search-fvar '= fvars-table))
                       (lbl-numbers-equal (label-marker "Lprim_numbers_equal")  )
                       (lbl-closure_numbers-equal  (label-marker "Lmake_numbers_equal")  )
                       (lbl-numbers-equal-loop (label-marker "Lprimitive_numbersequal_loop")  )
@@ -3621,43 +3621,43 @@
                       (lbl-numbers-equal-false (label-marker "Lprimitive_numbersequal_false")  )
                       (lbl-numbers-equal-end (label-marker "Lprimitive_numbersequal_end")  )     
                       )
-            (string-append
-            "JUMP("lbl-closure_numbers-equal");" new-line
-            lbl-numbers-equal":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "MOV(R1,FPARG(1)-1); // number of arguments"new-line                        
-             "MOV(R7,SOB_BOOLEAN_TRUE);"new-line
-             "MOV(R2,IMM(1));" new-line
-             lbl-numbers-equal-loop":" new-line
-             "CMP(R1,R2);"new-line
-             "JUMP_EQ("lbl-numbers-equal-end");" new-line
-             "MOV(R3,FPARG(R2+1));" new-line
-             "MOV(R4,FPARG(R2+2));" new-line
-             "PUSH(R3);" new-line
-             "PUSH(R4);" new-line
-              "CALL(COMPARE_label);"
-            "DROP(2);" new-line
-            "CMP(R0,0);" new-line
-            "JUMP_NE("lbl-numbers-equal-false");" new-line
-            "INCR(R2);" new-line
-            "JUMP("lbl-numbers-equal-loop");" new-line
-            lbl-numbers-equal-false":" new-line
-            "   MOV(R7,SOB_BOOLEAN_FALSE);" new-line
-            lbl-numbers-equal-end":"
-            new-line
-            "  MOV(R0,R7);"new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-            lbl-closure_numbers-equal":" new-line
+			(string-append
+			"JUMP("lbl-closure_numbers-equal");" new-line
+			lbl-numbers-equal":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"MOV(R1,FPARG(1)-1); // number of arguments"new-line			 			
+			 "MOV(R7,SOB_BOOLEAN_TRUE);"new-line
+			 "MOV(R2,IMM(1));" new-line
+			 lbl-numbers-equal-loop":" new-line
+			 "CMP(R1,R2);"new-line
+			 "JUMP_EQ("lbl-numbers-equal-end");" new-line
+			 "MOV(R3,FPARG(R2+1));" new-line
+			 "MOV(R4,FPARG(R2+2));" new-line
+			 "PUSH(R3);" new-line
+			 "PUSH(R4);" new-line
+			  "CALL(COMPARE_label);"
+			"DROP(2);" new-line
+			"CMP(R0,0);" new-line
+			"JUMP_NE("lbl-numbers-equal-false");" new-line
+			"INCR(R2);" new-line
+			"JUMP("lbl-numbers-equal-loop");" new-line
+			lbl-numbers-equal-false":" new-line
+			"	MOV(R7,SOB_BOOLEAN_FALSE);" new-line
+			lbl-numbers-equal-end":"
+			new-line
+			"  MOV(R0,R7);"new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+			lbl-closure_numbers-equal":" new-line
                         (generate-primitive-closure lbl-numbers-equal addr) new-line
-            )))))
+			)))))
 
 (define primitive-smaller
 (lambda (constants-table fvars-table frst_sym_address)
   (lambda ()
-        (let 
-             ((addr (search-fvar '< fvars-table))
+		(let 
+		     ((addr (search-fvar '< fvars-table))
                       (lbl-smaller (label-marker "Lprim_smaller")  )
                       (lbl-closure_smaller (label-marker "Lmake_smaller")  )
                       (lbl-smaller-loop (label-marker "Lprimitive_smaller_loop")  )
@@ -3666,124 +3666,124 @@
                       (lbl-smaller-end (label-marker "Lprimitive_smaller_end")  )
                       )
                     (string-append
-            "JUMP("lbl-closure_smaller");" new-line
-            lbl-smaller":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-             "MOV(R1,FPARG(1)-1); // number of arguments"new-line           
-             "MOV(R7,SOB_BOOLEAN_TRUE);"new-line
-             "MOV(R2,IMM(1));" new-line
-             lbl-smaller-loop":" new-line
-             "CMP(R1,R2);"new-line
-             "JUMP_EQ("lbl-smaller-end");" new-line
-             "MOV(R3,FPARG(R2+1));" new-line
-             "MOV(R4,FPARG(R2+2));" new-line
-             "PUSH(R3);" new-line
-             "PUSH(R4);" new-line
-              "CALL(COMPARE_label);"
-            "DROP(2);" new-line
-            "CMP(R0,-1);" new-line
-            "JUMP_NE("lbl-smaller-false");" new-line
-            "INCR(R2);" new-line
-            "JUMP("lbl-smaller-loop");" new-line
-            lbl-smaller-false":" new-line
-            "   MOV(R7,SOB_BOOLEAN_FALSE);" new-line
-            lbl-smaller-end":" new-line
-            "  MOV(R0,R7);"new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-            lbl-closure_smaller":" new-line
+			"JUMP("lbl-closure_smaller");" new-line
+			lbl-smaller":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			 "MOV(R1,FPARG(1)-1); // number of arguments"new-line			
+			 "MOV(R7,SOB_BOOLEAN_TRUE);"new-line
+			 "MOV(R2,IMM(1));" new-line
+			 lbl-smaller-loop":" new-line
+			 "CMP(R1,R2);"new-line
+			 "JUMP_EQ("lbl-smaller-end");" new-line
+			 "MOV(R3,FPARG(R2+1));" new-line
+			 "MOV(R4,FPARG(R2+2));" new-line
+			 "PUSH(R3);" new-line
+			 "PUSH(R4);" new-line
+			  "CALL(COMPARE_label);"
+			"DROP(2);" new-line
+			"CMP(R0,-1);" new-line
+			"JUMP_NE("lbl-smaller-false");" new-line
+			"INCR(R2);" new-line
+			"JUMP("lbl-smaller-loop");" new-line
+			lbl-smaller-false":" new-line
+			"	MOV(R7,SOB_BOOLEAN_FALSE);" new-line
+			lbl-smaller-end":" new-line
+			"  MOV(R0,R7);"new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+			lbl-closure_smaller":" new-line
                         (generate-primitive-closure lbl-smaller addr) new-line
-            )))))
-    
+			)))))
+	
 (define primitive-bigger
 (lambda (constants-table fvars-table frst_sym_address)
   (lambda ()
-        (let 
-             ((addr (search-fvar '> fvars-table))
+		(let 
+		     ((addr (search-fvar '> fvars-table))
                       (lbl-bigger (label-marker "Lprim_bigger")  )
                       (lbl-closure_bigger (label-marker "Lmake_bigger")  )
                       (lbl-bigger-loop (label-marker "Lprimitive_bigger_loop")  )
                       (lbl-bigger-true (label-marker "Lprimitive_bigger_true")  )
                       (lbl-bigger-false (label-marker "Lprimitive_bigger_false")  )
                       (lbl-bigger-end (label-marker "Lprimitive_bigger_end")  ))
-            (string-append
-            "JUMP("lbl-closure_bigger");" new-line
-            lbl-bigger":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-             "MOV(R1,FPARG(1)-1); // number of arguments"new-line                       
-             "MOV(R7,SOB_BOOLEAN_TRUE);"new-line
-             "MOV(R2,IMM(1));" new-line
-             lbl-bigger-loop":" new-line
-             "CMP(R1,R2);"new-line
-             "JUMP_EQ("lbl-bigger-end");" new-line
-             "MOV(R3,FPARG(R2+1));" new-line
-             "MOV(R4,FPARG(R2+2));" new-line
-             "PUSH(R3);" new-line
-             "PUSH(R4);" new-line
-              "CALL(COMPARE_label);"
-            "DROP(2);" new-line
-            "CMP(R0,1);" new-line
-            "JUMP_NE("lbl-bigger-false");" new-line
-            "INCR(R2);" new-line
-            "JUMP("lbl-bigger-loop");" new-line
-            lbl-bigger-false":" new-line
-            "   MOV(R7,SOB_BOOLEAN_FALSE);" new-line
-            lbl-bigger-end":" new-line
-            "  MOV(R0,R7);"new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-            lbl-closure_bigger":" new-line
+			(string-append
+			"JUMP("lbl-closure_bigger");" new-line
+			lbl-bigger":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			 "MOV(R1,FPARG(1)-1); // number of arguments"new-line			 			
+			 "MOV(R7,SOB_BOOLEAN_TRUE);"new-line
+			 "MOV(R2,IMM(1));" new-line
+			 lbl-bigger-loop":" new-line
+			 "CMP(R1,R2);"new-line
+			 "JUMP_EQ("lbl-bigger-end");" new-line
+			 "MOV(R3,FPARG(R2+1));" new-line
+			 "MOV(R4,FPARG(R2+2));" new-line
+			 "PUSH(R3);" new-line
+			 "PUSH(R4);" new-line
+			  "CALL(COMPARE_label);"
+			"DROP(2);" new-line
+			"CMP(R0,1);" new-line
+			"JUMP_NE("lbl-bigger-false");" new-line
+			"INCR(R2);" new-line
+			"JUMP("lbl-bigger-loop");" new-line
+			lbl-bigger-false":" new-line
+			"	MOV(R7,SOB_BOOLEAN_FALSE);" new-line
+			lbl-bigger-end":" new-line
+			"  MOV(R0,R7);"new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+			lbl-closure_bigger":" new-line
                         (generate-primitive-closure lbl-bigger addr) new-line
-            )))))
+			)))))
 
 (define primtive-symbol->string
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'symbol->string fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'symbol->string fvars-table))
                       (lbl-symbol->string (label-marker "Lprim_symbol_string")  )
                       (lbl-closure_symbol->string (label-marker "Lmake_symbol_string")  )
                       )
-        (string-append
-            "JUMP("lbl-closure_symbol->string");" new-line
-            lbl-symbol->string":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2));" new-line
-            "   MOV(R0,INDD(R0,1));" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
+		(string-append
+			"JUMP("lbl-closure_symbol->string");" new-line
+			lbl-symbol->string":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2));" new-line
+			"	MOV(R0,INDD(R0,1));" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
                         lbl-closure_symbol->string":" new-line
                         (generate-primitive-closure lbl-symbol->string addr) new-line
-            )))))
+			)))))
 
 (define prim-cons
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'cons fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'cons fvars-table))
                       (lbl-cons (label-marker "Lprim_cons")  )
                       (lbl-closure_cons (label-marker "Lmake_cons")  )
                       )
-        (string-append
-            "JUMP("lbl-closure_cons");" new-line
-            lbl-cons":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   PUSH(FPARG(3));" new-line ;get arg2
-            "   PUSH(FPARG(2));" new-line ;get arg1
-            "   CALL(MAKE_SOB_PAIR);" new-line
-            "   DROP(2);" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
+		(string-append
+			"JUMP("lbl-closure_cons");" new-line
+			lbl-cons":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	PUSH(FPARG(3));" new-line ;get arg2
+			"	PUSH(FPARG(2));" new-line ;get arg1
+			"	CALL(MAKE_SOB_PAIR);" new-line
+			"	DROP(2);" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
                         lbl-closure_cons":" new-line
                         (generate-primitive-closure lbl-cons addr) new-line
-            )))))
+			)))))
 
 (define primitive-eq
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'eq? fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'eq? fvars-table))
                       (lbl-eq (label-marker "Lprim_eq")  )
                       (lbl-closure-eq (label-marker "Lmake_eq")  )
                       (lbl-eq-cmp-addr (label-marker "Leq_cmp_addr"))
@@ -3794,763 +3794,763 @@
                       (lbl-is-eq-Fraction (label-marker "Leq_fraction")  )
                       (lbl-is-eq-Symbol (label-marker "Leq_sym")  )
                       )
-        (string-append
+		(string-append
                         "/* Compares two arguments
                          If they are in {T_PAIR, T_STRING, T_VECTOR, T_NIL, T_VOID, T_BOOL} we only compare addresses
                          If they are closures, we compare each of their 3 fields to make sure they are all equal
-                         Otherwise they are integers or chars so we compare their values and then their addresses */ " new-line     
-            "JUMP("lbl-closure-eq");" new-line
-            lbl-eq":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R1,FPARG(2));  // Move the first arg to R0" new-line
-            "   MOV(R2,FPARG(3)); // Move the second argument to R1" new-line
-            "   MOV(R5,SOB_BOOLEAN_TRUE);" new-line
-            "   CMP(INDD(R1,0),INDD(R2,0)); // Compare the types" new-line
-            "   JUMP_NE("lbl-not-eq");" new-line
-            "   CMP(INDD(R1,0),T_FRACTION);" new-line
-            "   JUMP_EQ("lbl-is-eq-Fraction");" new-line
-            "   CMP(INDD(R1,0),T_NIL);" new-line
-            "   JUMP_EQ("Lbl-end-eq");" new-line
-            "   CMP(INDD(R1,0),T_VOID);" new-line
-            "   JUMP_EQ("Lbl-end-eq");" new-line
-            "   CMP(INDD(R1,0),T_SYMBOL);" new-line
-            "   JUMP_EQ("lbl-is-eq-Symbol");" new-line
-                        "   CMP(INDD(R1,0),T_STRING);" new-line
-            "   JUMP_EQ("lbl-eq-cmp-addr");" new-line
-            "   CMP(INDD(R1,0),T_PAIR);" new-line
-            "   JUMP_EQ("lbl-eq-cmp-addr");" new-line
-            "   CMP(INDD(R1,0),T_VECTOR);" new-line
-            "   JUMP_EQ("lbl-eq-cmp-addr");" new-line
-            "   CMP(INDD(R1,0),T_BOOL);" new-line
-            "   JUMP_EQ("lbl-eq-cmp-addr");" new-line
-                        "   CMP(INDD(R1,0),T_CLOSURE); // Checks if both args are closures" new-line
-            "   JUMP_NE("lbl-eq-cmp-val");" new-line
+                         Otherwise they are integers or chars so we compare their values and then their addresses */ " new-line		
+			"JUMP("lbl-closure-eq");" new-line
+			lbl-eq":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R1,FPARG(2));  // Move the first arg to R0" new-line
+			"	MOV(R2,FPARG(3)); // Move the second argument to R1" new-line
+			"	MOV(R5,SOB_BOOLEAN_TRUE);" new-line
+			"	CMP(INDD(R1,0),INDD(R2,0)); // Compare the types" new-line
+			"	JUMP_NE("lbl-not-eq");" new-line
+			"	CMP(INDD(R1,0),T_FRACTION);" new-line
+			"	JUMP_EQ("lbl-is-eq-Fraction");" new-line
+			"	CMP(INDD(R1,0),T_NIL);" new-line
+			"	JUMP_EQ("Lbl-end-eq");" new-line
+			"	CMP(INDD(R1,0),T_VOID);" new-line
+			"	JUMP_EQ("Lbl-end-eq");" new-line
+			"	CMP(INDD(R1,0),T_SYMBOL);" new-line
+			"	JUMP_EQ("lbl-is-eq-Symbol");" new-line
+                        "	CMP(INDD(R1,0),T_STRING);" new-line
+			"	JUMP_EQ("lbl-eq-cmp-addr");" new-line
+			"	CMP(INDD(R1,0),T_PAIR);" new-line
+			"	JUMP_EQ("lbl-eq-cmp-addr");" new-line
+			"	CMP(INDD(R1,0),T_VECTOR);" new-line
+			"	JUMP_EQ("lbl-eq-cmp-addr");" new-line
+			"	CMP(INDD(R1,0),T_BOOL);" new-line
+			"	JUMP_EQ("lbl-eq-cmp-addr");" new-line
+                        "	CMP(INDD(R1,0),T_CLOSURE); // Checks if both args are closures" new-line
+			"	JUMP_NE("lbl-eq-cmp-val");" new-line
                         "       CMP(INDD(R1,0),INDD(R2,0)); // Compares the 3 fields of both closures" new-line
                         "       JUMP_NE("lbl-not-eq"); " new-line
                         "       CMP(INDD(R1,1),INDD(R2,1));" new-line
                         "       JUMP_NE("lbl-not-eq"); " new-line
                         "       CMP(INDD(R1,2),INDD(R2,2));" new-line
                         "       JUMP_NE("lbl-not-eq"); " new-line
-            "       JUMP("Lbl-end-eq");" new-line
-            lbl-eq-cmp-addr":" new-line
-            "   CMP(R1,R2);" new-line
-            "   JUMP_EQ("Lbl-end-eq");" new-line
-            "   JUMP("lbl-not-eq");" new-line
-            lbl-eq-cmp-val":" new-line
-            "   CMP(INDD(R2,1),INDD(R1,1));" new-line
-            "   JUMP_EQ("Lbl-end-eq");" new-line
-            "JUMP("lbl-not-eq");\n"
-            lbl-is-eq-Fraction":"  new-line
-            "   CMP(INDD(R2,1),INDD(R1,1));" new-line
-            "   JUMP_NE("lbl-not-eq");" new-line
-            "   CMP(INDD(R2,2),INDD(R1,2));" new-line
-            "   JUMP_EQ("Lbl-end-eq");" new-line
-            "JUMP("lbl-not-eq");\n"
-            lbl-is-eq-Symbol":"  new-line
-            "   CMP(INDD(R2,1),INDD(R1,1));" new-line
-            "   JUMP_EQ("Lbl-end-eq");" new-line
-            lbl-not-eq":" new-line
-            "   MOV(R5,SOB_BOOLEAN_FALSE);" new-line
-            Lbl-end-eq":" new-line
-            "MOV(R0,R5);\n"
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
+			"       JUMP("Lbl-end-eq");" new-line
+			lbl-eq-cmp-addr":" new-line
+			"	CMP(R1,R2);" new-line
+			"	JUMP_EQ("Lbl-end-eq");" new-line
+			"	JUMP("lbl-not-eq");" new-line
+			lbl-eq-cmp-val":" new-line
+			"	CMP(INDD(R2,1),INDD(R1,1));" new-line
+			"	JUMP_EQ("Lbl-end-eq");" new-line
+			"JUMP("lbl-not-eq");\n"
+			lbl-is-eq-Fraction":"  new-line
+			"	CMP(INDD(R2,1),INDD(R1,1));" new-line
+			"	JUMP_NE("lbl-not-eq");" new-line
+			"	CMP(INDD(R2,2),INDD(R1,2));" new-line
+			"	JUMP_EQ("Lbl-end-eq");" new-line
+			"JUMP("lbl-not-eq");\n"
+			lbl-is-eq-Symbol":"  new-line
+			"	CMP(INDD(R2,1),INDD(R1,1));" new-line
+			"	JUMP_EQ("Lbl-end-eq");" new-line
+			lbl-not-eq":" new-line
+			"	MOV(R5,SOB_BOOLEAN_FALSE);" new-line
+			Lbl-end-eq":" new-line
+			"MOV(R0,R5);\n"
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
                         lbl-closure-eq":" new-line
                         (generate-primitive-closure lbl-eq addr) new-line
-            )))))
+			)))))
 
 (define primitive-vector
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'vector fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'vector fvars-table))
                       (lbl-vector (label-marker "Lprim_vector")  )
                       (lbl-closure_vector (label-marker "Lmake_vector")  )
                       (Lbl_vector_loop (label-marker "Lvector_loop")  )
                       (Lbl_vector_end (label-marker "Lvector_end")  )
                       )
-        (string-append
-            "JUMP("lbl-closure_vector");" new-line
-            lbl-vector":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
+		(string-append
+			"JUMP("lbl-closure_vector");" new-line
+			lbl-vector":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
                         "       MOV(R1, IMM(0))     "
-            "   MOV(R2,FPARG(1)-1); " new-line  
-            "   MOV(R3,R1); " new-line
-            "   ADD(R3,IMM(2)); " new-line
-            Lbl_vector_loop":" new-line
-            "       CMP(R2 ,R1);" new-line  
-            "   JUMP_EQ("Lbl_vector_end");" new-line
-            "       PUSH(FPARG(R3)) ;" new-line
-            "       ADD(R3, IMM(1)); " new-line
-            "       ADD(R1, IMM(1)); " new-line
-            "   JUMP("Lbl_vector_loop");" new-line
-            Lbl_vector_end":" new-line
-            "   PUSH(R2);"  new-line
-            "   CALL(MAKE_SOB_VECTOR);" new-line
-            "   ADD(R2,IMM(1));" new-line
-            "   DROP(R2);" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-            
-            lbl-closure_vector":" new-line
+			"	MOV(R2,FPARG(1)-1); " new-line  
+			"	MOV(R3,R1); " new-line
+			"	ADD(R3,IMM(2)); " new-line
+			Lbl_vector_loop":" new-line
+			"       CMP(R2 ,R1);" new-line  
+			"	JUMP_EQ("Lbl_vector_end");" new-line
+			"       PUSH(FPARG(R3)) ;" new-line
+			"       ADD(R3, IMM(1)); " new-line
+			"       ADD(R1, IMM(1)); " new-line
+			"	JUMP("Lbl_vector_loop");" new-line
+			Lbl_vector_end":" new-line
+			"	PUSH(R2);"	new-line
+			"	CALL(MAKE_SOB_VECTOR);" new-line
+			"	ADD(R2,IMM(1));" new-line
+			"	DROP(R2);" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+			
+			lbl-closure_vector":" new-line
                         (generate-primitive-closure lbl-vector addr) new-line
-            
-            ))))    )           
-        
+			
+			))))	)			
+		
 (define primitive-make-string
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'make-string fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'make-string fvars-table))
                       (lbl-make-string (label-marker "Lprim_maketring")  )
                       (lbl-closure-make-string (label-marker "Lmake_make_string")  )
                       (Lbl_make-string_one_param (label-marker "Lmakestring_one_param")  )
                       (Lbl_make-string_loop (label-marker "Lmakestring_loop")  )
                       (Lbl_make-string_end (label-marker "Lmakestring_end")  )
                       )
-        (string-append
-            "JUMP("lbl-closure-make-string");" new-line
-            lbl-make-string":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "MOV(R2,0); \n" 
-            "   MOV(R3,IMM(0));" new-line 
-            "   MOV(R1,FPARG(2));" new-line ;(len)
-            "   MOV(R1,INDD(R1,1));" new-line
-            "MOV(R5, FPARG(1)-1); \n"
-            "CMP(R5, 1); \n"
-            "JUMP_EQ("Lbl_make-string_one_param"); \n"
-            "   MOV(R2,FPARG(3)); " new-line ;(value)
-            Lbl_make-string_loop":" new-line 
-            "   CMP(R3,R1);" new-line ; 
-            "   JUMP_EQ("Lbl_make-string_end");" new-line
-            "   PUSH(INDD(R2,1));" new-line
-            "   ADD(R3,IMM(1));" new-line
-            "   JUMP("Lbl_make-string_loop");" new-line
-            Lbl_make-string_one_param":" new-line 
-            "   CMP(R3,R1);" new-line ; 
-            "   JUMP_EQ("Lbl_make-string_end");" new-line
-            "   PUSH(R2);" new-line
-            "   ADD(R3,IMM(1));" new-line
-            "   JUMP("Lbl_make-string_one_param");" new-line
-            Lbl_make-string_end":" new-line
-            "   PUSH(R1);"  new-line
-            "   CALL(MAKE_SOB_STRING);" new-line
-            "   ADD(R1,IMM(1));" new-line
-            "   DROP(R1);" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-            lbl-closure-make-string":" new-line
+		(string-append
+			"JUMP("lbl-closure-make-string");" new-line
+			lbl-make-string":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"MOV(R2,0); \n" 
+			"	MOV(R3,IMM(0));" new-line 
+			"	MOV(R1,FPARG(2));" new-line ;(len)
+			"	MOV(R1,INDD(R1,1));" new-line
+			"MOV(R5, FPARG(1)-1); \n"
+			"CMP(R5, 1); \n"
+			"JUMP_EQ("Lbl_make-string_one_param"); \n"
+			"	MOV(R2,FPARG(3)); " new-line ;(value)
+			Lbl_make-string_loop":" new-line 
+			"	CMP(R3,R1);" new-line ; 
+			"	JUMP_EQ("Lbl_make-string_end");" new-line
+			"	PUSH(INDD(R2,1));" new-line
+			"	ADD(R3,IMM(1));" new-line
+			"	JUMP("Lbl_make-string_loop");" new-line
+			Lbl_make-string_one_param":" new-line 
+			"	CMP(R3,R1);" new-line ; 
+			"	JUMP_EQ("Lbl_make-string_end");" new-line
+			"	PUSH(R2);" new-line
+			"	ADD(R3,IMM(1));" new-line
+			"	JUMP("Lbl_make-string_one_param");" new-line
+			Lbl_make-string_end":" new-line
+			"	PUSH(R1);"	new-line
+			"	CALL(MAKE_SOB_STRING);" new-line
+			"	ADD(R1,IMM(1));" new-line
+			"	DROP(R1);" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+			lbl-closure-make-string":" new-line
                         (generate-primitive-closure lbl-make-string addr) new-line
-            )))))           
+			)))))			
 
 (define primitive-make-vector
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'make-vector fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'make-vector fvars-table))
                       (lbl-make-vector (label-marker "Lprim_make_vector")  )
                       (lbl-closure-make-vector (label-marker "Lmake_make_vector")  )
                       
                       (Lbl_vec_loop (label-marker "Lvec_loop")  )
                       (Lbl_vec_end (label-marker "Lvec_end")  )
                       )
-        (string-append
-            "JUMP("lbl-closure-make-vector");" new-line
-            lbl-make-vector":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "PUSH(2);\n"
-            "CALL(MALLOC);\n"
-            "DROP(1);\n"
-            "MOV(IND(R0),T_INTEGER); \n"
-            "MOV(INDD(R0,1),IMM(0)); \n"
-            "MOV(R2,R0); \n" 
-            "   MOV(R3,IMM(0));" new-line 
-            "   MOV(R1,FPARG(2));" new-line ;(len)
-            "   MOV(R1,INDD(R1,1));" new-line
-            "MOV(R5, FPARG(1)-1); \n"
-            "CMP(R5, 1); \n"
-            "JUMP_EQ("Lbl_vec_loop"); \n"
-            "   MOV(R2,FPARG(3)); " new-line ;(value)
-            Lbl_vec_loop":" new-line 
-            "   CMP(R3,R1);" new-line ; 
-            "   JUMP_EQ("Lbl_vec_end");" new-line
-            "   PUSH(R2);" new-line
-            "   ADD(R3,IMM(1));" new-line
-            "   JUMP("Lbl_vec_loop");" new-line
-            Lbl_vec_end":" new-line
-            "   PUSH(R1);"  new-line
-            "   CALL(MAKE_SOB_VECTOR);" new-line
-            "   ADD(R1,IMM(1));" new-line
-            "   DROP(R1);" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-            lbl-closure-make-vector":" new-line
+		(string-append
+			"JUMP("lbl-closure-make-vector");" new-line
+			lbl-make-vector":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"PUSH(2);\n"
+			"CALL(MALLOC);\n"
+			"DROP(1);\n"
+			"MOV(IND(R0),T_INTEGER); \n"
+			"MOV(INDD(R0,1),IMM(0)); \n"
+			"MOV(R2,R0); \n" 
+			"	MOV(R3,IMM(0));" new-line 
+			"	MOV(R1,FPARG(2));" new-line ;(len)
+			"	MOV(R1,INDD(R1,1));" new-line
+			"MOV(R5, FPARG(1)-1); \n"
+			"CMP(R5, 1); \n"
+			"JUMP_EQ("Lbl_vec_loop"); \n"
+			"	MOV(R2,FPARG(3)); " new-line ;(value)
+			Lbl_vec_loop":" new-line 
+			"	CMP(R3,R1);" new-line ; 
+			"	JUMP_EQ("Lbl_vec_end");" new-line
+			"	PUSH(R2);" new-line
+			"	ADD(R3,IMM(1));" new-line
+			"	JUMP("Lbl_vec_loop");" new-line
+			Lbl_vec_end":" new-line
+			"	PUSH(R1);"	new-line
+			"	CALL(MAKE_SOB_VECTOR);" new-line
+			"	ADD(R1,IMM(1));" new-line
+			"	DROP(R1);" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+			lbl-closure-make-vector":" new-line
                         (generate-primitive-closure lbl-make-vector addr) new-line
-            )))))       
+			)))))		
 
 (define primitive-string-set
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'string-set! fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'string-set! fvars-table))
                       (lbl-string-set (label-marker "Lprim_string_set")  )
                       (lbl-closure-string-set (label-marker "Lmake_string_set")  ))
-        (string-append
-            "JUMP("lbl-closure-string-set");" new-line
-            lbl-string-set":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2));" new-line  ; The string param
-            "   MOV(R1,FPARG(3));" new-line  ; index param
-            "   MOV(R2,FPARG(4));" new-line  ; char param
-            "   MOV(R2,INDD(R2,1));" new-line
-            "   MOV(R1,INDD(R1,1));" new-line
-            "   ADD(R1,IMM(2));" new-line
-            "   MOV(INDD(R0,R1),R2);" new-line  ; Moving the char to the given index
-            "   MOV(R0,SOB_VOID);" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-            lbl-closure-string-set":" new-line
+		(string-append
+			"JUMP("lbl-closure-string-set");" new-line
+			lbl-string-set":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2));" new-line  ; The string param
+			"	MOV(R1,FPARG(3));" new-line  ; index param
+			"	MOV(R2,FPARG(4));" new-line  ; char param
+			"	MOV(R2,INDD(R2,1));" new-line
+			"	MOV(R1,INDD(R1,1));" new-line
+			"	ADD(R1,IMM(2));" new-line
+			"	MOV(INDD(R0,R1),R2);" new-line  ; Moving the char to the given index
+			"	MOV(R0,SOB_VOID);" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+			lbl-closure-string-set":" new-line
                         (generate-primitive-closure lbl-string-set addr) new-line
-    )))))
-    
+	)))))
+	
 (define primitive-vector-set
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'vector-set! fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'vector-set! fvars-table))
                       (lbl-vector-set (label-marker "Lprim_vector_set")  )
                       (lbl-closure-vector-set (label-marker "Lmake_vector_set")  ))
-        (string-append
-            "JUMP("lbl-closure-vector-set");" new-line
-            lbl-vector-set":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2));" new-line  ; The vector param
-            "   MOV(R1,FPARG(3));" new-line  ; index param
-            "   MOV(R2,FPARG(4));" new-line  ; obj param
-            "   MOV(R1,INDD(R1,1));" new-line
-            "   ADD(R1,IMM(2));" new-line
-            "   MOV(INDD(R0,R1),R2);" new-line  ; Moving the obj to the given index
-            "   MOV(R0,SOB_VOID);" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-            lbl-closure-vector-set":" new-line
+		(string-append
+			"JUMP("lbl-closure-vector-set");" new-line
+			lbl-vector-set":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2));" new-line  ; The vector param
+			"	MOV(R1,FPARG(3));" new-line  ; index param
+			"	MOV(R2,FPARG(4));" new-line  ; obj param
+			"	MOV(R1,INDD(R1,1));" new-line
+			"	ADD(R1,IMM(2));" new-line
+			"	MOV(INDD(R0,R1),R2);" new-line  ; Moving the obj to the given index
+			"	MOV(R0,SOB_VOID);" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+			lbl-closure-vector-set":" new-line
                         (generate-primitive-closure lbl-vector-set addr) new-line
-    )))))
-            
+	)))))
+			
 (define primitive-vector-length
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'vector-length fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'vector-length fvars-table))
                       (lbl-vector-length (label-marker "Lprim_vector_length")  )
                       (lbl-closure-vector-length (label-marker "Lmake_vector_length")  ))
-        (string-append
-            "JUMP("lbl-closure-vector-length");" new-line
-            lbl-vector-length":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2));" new-line
-            "   MOV(R0,INDD(R0,1));" new-line
-            "   PUSH(R0);" new-line
-            "   CALL(MAKE_SOB_INTEGER);" new-line
-            "   DROP(1);" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
+		(string-append
+			"JUMP("lbl-closure-vector-length");" new-line
+			lbl-vector-length":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2));" new-line
+			"	MOV(R0,INDD(R0,1));" new-line
+			"	PUSH(R0);" new-line
+			"	CALL(MAKE_SOB_INTEGER);" new-line
+			"	DROP(1);" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
                         lbl-closure-vector-length":" new-line
                         (generate-primitive-closure lbl-vector-length addr) new-line
 
-            )))))       
-            
+			)))))		
+			
 (define primitive-vector-ref
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'vector-ref fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'vector-ref fvars-table))
                       (lbl-vector-ref (label-marker "Lprim_vector_ref")  )
                       (lbl-closure-vector-ref (label-marker "Lmake_vector_ref")  ))
-        (string-append
-            "JUMP("lbl-closure-vector-ref");" new-line
-            lbl-vector-ref":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R1,FPARG(2));" new-line ; vector arg
-            "   MOV(R2,FPARG(3));" new-line      ; Int object
-            "   MOV(R5,INDD(R2,1));" new-line ; int-ref to the relevant index 
-            "   ADD(R5,IMM(2));" new-line
-            "   MOV(R0,INDD(R1,R5));" new-line ; get the value in the index
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
+		(string-append
+			"JUMP("lbl-closure-vector-ref");" new-line
+			lbl-vector-ref":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R1,FPARG(2));" new-line ; vector arg
+			"	MOV(R2,FPARG(3));" new-line      ; Int object
+			"	MOV(R5,INDD(R2,1));" new-line ; int-ref to the relevant index 
+			"	ADD(R5,IMM(2));" new-line
+			"	MOV(R0,INDD(R1,R5));" new-line ; get the value in the index
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
 
-            lbl-closure-vector-ref":" new-line
+			lbl-closure-vector-ref":" new-line
                         (generate-primitive-closure lbl-vector-ref addr) new-line
-            )))))
-            
-            
-            
-            
+			)))))
+			
+			
+			
+			
 (define primitive-str-length
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'string-length fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'string-length fvars-table))
                       (lbl-str-length (label-marker "Lprim_str_length")  )
                       (lbl-closure-str-length (label-marker "Lmake_str_length")  ))
-        (string-append
-            "JUMP("lbl-closure-str-length");" new-line
-            lbl-str-length":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2));" new-line
-            "   MOV(R0,INDD(R0,1));" new-line
-            "   PUSH(R0);" new-line
-            "   CALL(MAKE_SOB_INTEGER);" new-line
-            "   DROP(1);" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
+		(string-append
+			"JUMP("lbl-closure-str-length");" new-line
+			lbl-str-length":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2));" new-line
+			"	MOV(R0,INDD(R0,1));" new-line
+			"	PUSH(R0);" new-line
+			"	CALL(MAKE_SOB_INTEGER);" new-line
+			"	DROP(1);" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
                         lbl-closure-str-length":" new-line
                         (generate-primitive-closure lbl-str-length addr) new-line
                         )))))
-            
+			
 
 (define primitive-string-ref
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'string-ref fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'string-ref fvars-table))
                       (lbl-string-ref (label-marker "Lprim_string_ref")  )
                       (lbl-closure-string-ref (label-marker "Lmake_string_ref")  ))
-        (string-append
-            "JUMP("lbl-closure-string-ref");" new-line
-            lbl-string-ref":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2));" new-line ; string arg
-            "   MOV(R1,FPARG(3));" new-line      ; Int object
-            "   MOV(R1,INDD(R1,1));" new-line ; int-ref to the relevant index 
-            "   ADD(R1,IMM(2));" new-line
-            "   MOV(R0,INDD(R0,R1));" new-line ; get the value in the index
-            "   PUSH(R0);" new-line
-            "   CALL(MAKE_SOB_CHAR);" new-line
-            "   DROP(1);" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-            lbl-closure-string-ref":" new-line
+		(string-append
+			"JUMP("lbl-closure-string-ref");" new-line
+			lbl-string-ref":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2));" new-line ; string arg
+			"	MOV(R1,FPARG(3));" new-line      ; Int object
+			"	MOV(R1,INDD(R1,1));" new-line ; int-ref to the relevant index 
+			"	ADD(R1,IMM(2));" new-line
+			"	MOV(R0,INDD(R0,R1));" new-line ; get the value in the index
+			"	PUSH(R0);" new-line
+			"	CALL(MAKE_SOB_CHAR);" new-line
+			"	DROP(1);" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+			lbl-closure-string-ref":" new-line
                         (generate-primitive-closure lbl-string-ref addr) new-line
-            ))))    )           
+			))))	)			
 
 (define primtive-set-cdr!
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'set-cdr! fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'set-cdr! fvars-table))
                       (lbl-set-cdr! (label-marker "Lprim_setcdr")  )
                       (lbl-closure-set-cdr! (label-marker "Lmake_set_cdr")  ))
-        (string-append
-            "JUMP("lbl-closure-set-cdr!");" new-line
-            lbl-set-cdr!":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R1,FPARG(2));" new-line ;pair
-            "   MOV(R2,FPARG(3));" new-line ;obj
-            "   MOV(INDD(R1,2),R2);" new-line
-            "   MOV(R0,SOB_VOID);" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-            lbl-closure-set-cdr!":" new-line
+		(string-append
+			"JUMP("lbl-closure-set-cdr!");" new-line
+			lbl-set-cdr!":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R1,FPARG(2));" new-line ;pair
+			"	MOV(R2,FPARG(3));" new-line ;obj
+			"	MOV(INDD(R1,2),R2);" new-line
+			"	MOV(R0,SOB_VOID);" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+			lbl-closure-set-cdr!":" new-line
                         (generate-primitive-closure lbl-set-cdr! addr) new-line
-            
-            )))))
-            
+			
+			)))))
+			
 (define primtive-set-car!
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'set-car! fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'set-car! fvars-table))
                       (lbl-set-car! (label-marker "Lprim_set_car")  )
                       (lbl-closure-set-car!(label-marker "Lmake_set_car")  ))
-        (string-append
-            "JUMP("lbl-closure-set-car!");" new-line
-            lbl-set-car!":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R1,FPARG(2));" new-line ;pair
-            "   MOV(R2,FPARG(3));" new-line ;obj
-            "   MOV(INDD(R1,1),R2);" new-line
-            "   MOV(R0,SOB_VOID);" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-            lbl-closure-set-car!":" new-line
+		(string-append
+			"JUMP("lbl-closure-set-car!");" new-line
+			lbl-set-car!":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R1,FPARG(2));" new-line ;pair
+			"	MOV(R2,FPARG(3));" new-line ;obj
+			"	MOV(INDD(R1,1),R2);" new-line
+			"	MOV(R0,SOB_VOID);" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+			lbl-closure-set-car!":" new-line
                         (generate-primitive-closure lbl-set-car! addr) new-line
-            
-            )))))
-            
+			
+			)))))
+			
 (define primitive-procedure?
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'procedure? fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'procedure? fvars-table))
                       (lbl-procedure? (label-marker "Lprim_procedure")  )
                       (lbl-closure-procedure? (label-marker "Lmake_procedure")  )
                      (lbl-is-procedure (label-marker "L_is_procedure")  )
                      (lbl-end-procedure (label-marker "L_end_procedure")  ))
-        (string-append
-            "JUMP("lbl-closure-procedure?");" new-line
-            lbl-procedure?":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2));" new-line
-            "   MOV(R0,INDD(R0,0));" new-line
-            "   CMP(R0,T_CLOSURE);" new-line
-            "   JUMP_EQ("lbl-is-procedure");" new-line
-            "   MOV(R0,SOB_BOOLEAN_FALSE);" new-line
-            "   JUMP("lbl-end-procedure");" new-line
-            lbl-is-procedure":" new-line
-            "   MOV(R0,SOB_BOOLEAN_TRUE);" new-line
-            lbl-end-procedure":" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-        lbl-closure-procedure?":" new-line
+		(string-append
+			"JUMP("lbl-closure-procedure?");" new-line
+			lbl-procedure?":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2));" new-line
+			"	MOV(R0,INDD(R0,0));" new-line
+			"	CMP(R0,T_CLOSURE);" new-line
+			"	JUMP_EQ("lbl-is-procedure");" new-line
+			"	MOV(R0,SOB_BOOLEAN_FALSE);" new-line
+			"	JUMP("lbl-end-procedure");" new-line
+			lbl-is-procedure":" new-line
+			"	MOV(R0,SOB_BOOLEAN_TRUE);" new-line
+			lbl-end-procedure":" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+		lbl-closure-procedure?":" new-line
                 (generate-primitive-closure lbl-procedure? addr) new-line
-        )))))
-            
-            
+		)))))
+			
+			
 (define primitive-pair?
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'pair? fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'pair? fvars-table))
                       (lbl-pair? (label-marker "Lprim_pair")  )
                       (lbl-closure-pair? (label-marker "Lmake_pair")  )
                      (lbl-is-pair (label-marker "L_is_pair")  )
                      (lbl-end-pair (label-marker "L_end_pair")  ))
-        (string-append
-            "JUMP("lbl-closure-pair?");" new-line
-            lbl-pair?":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2));" new-line
-            "   MOV(R0,INDD(R0,0));" new-line
-            "   CMP(R0,T_PAIR);" new-line
-            "   JUMP_EQ("lbl-is-pair");" new-line
-            "   MOV(R0,SOB_BOOLEAN_FALSE);" new-line
-            "   JUMP("lbl-end-pair");" new-line
-            lbl-is-pair":" new-line
-            "   MOV(R0,SOB_BOOLEAN_TRUE);" new-line
-            lbl-end-pair":" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-        lbl-closure-pair?":" new-line
+		(string-append
+			"JUMP("lbl-closure-pair?");" new-line
+			lbl-pair?":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2));" new-line
+			"	MOV(R0,INDD(R0,0));" new-line
+			"	CMP(R0,T_PAIR);" new-line
+			"	JUMP_EQ("lbl-is-pair");" new-line
+			"	MOV(R0,SOB_BOOLEAN_FALSE);" new-line
+			"	JUMP("lbl-end-pair");" new-line
+			lbl-is-pair":" new-line
+			"	MOV(R0,SOB_BOOLEAN_TRUE);" new-line
+			lbl-end-pair":" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+		lbl-closure-pair?":" new-line
                 (generate-primitive-closure lbl-pair? addr) new-line
-        )))))
-            
+		)))))
+			
 (define primitive-symbol?
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'symbol? fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'symbol? fvars-table))
                       (lbl-symbol? (label-marker "Lprim_symbol")  )
                       (lbl-closure-symbol? (label-marker "Lmake_symbol")  )
                      (lbl-is-symbol (label-marker "L_is_symbol")  )
                      (lbl-end-symbol (label-marker "L_end_symbol")  ))
-        (string-append
-            "JUMP("lbl-closure-symbol?");" new-line
-            lbl-symbol?":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2));" new-line
-            "   MOV(R0,INDD(R0,0));" new-line
-            "   CMP(R0,T_SYMBOL);" new-line
-            "   JUMP_EQ("lbl-is-symbol");" new-line
-            "   MOV(R0,SOB_BOOLEAN_FALSE);" new-line
-            "   JUMP("lbl-end-symbol");" new-line
-            lbl-is-symbol":" new-line
-            "   MOV(R0,SOB_BOOLEAN_TRUE);" new-line
-            lbl-end-symbol":" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-        lbl-closure-symbol?":" new-line
+		(string-append
+			"JUMP("lbl-closure-symbol?");" new-line
+			lbl-symbol?":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2));" new-line
+			"	MOV(R0,INDD(R0,0));" new-line
+			"	CMP(R0,T_SYMBOL);" new-line
+			"	JUMP_EQ("lbl-is-symbol");" new-line
+			"	MOV(R0,SOB_BOOLEAN_FALSE);" new-line
+			"	JUMP("lbl-end-symbol");" new-line
+			lbl-is-symbol":" new-line
+			"	MOV(R0,SOB_BOOLEAN_TRUE);" new-line
+			lbl-end-symbol":" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+		lbl-closure-symbol?":" new-line
                 (generate-primitive-closure lbl-symbol? addr) new-line
-        )))))
-;;      
+		)))))
+;; 		
 (define primitive-string?
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'string? fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'string? fvars-table))
                       (lbl-string? (label-marker "Lprim_string")  )
                       (lbl-closure-string? (label-marker "Lmake_string")  )
                      (lbl-is-string (label-marker "L_is_string")  )
                      (lbl-end-string (label-marker "L_end_string")  ))
-        (string-append
-            "JUMP("lbl-closure-string?");" new-line
-            lbl-string?":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2));" new-line
-            "   MOV(R0,INDD(R0,0));" new-line
-            "   CMP(R0,T_STRING);" new-line
-            "   JUMP_EQ("lbl-is-string");" new-line
-            "   MOV(R0,SOB_BOOLEAN_FALSE);" new-line
-            "   JUMP("lbl-end-string");" new-line
-            lbl-is-string":" new-line
-            "   MOV(R0,SOB_BOOLEAN_TRUE);" new-line
-            lbl-end-string":" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-        lbl-closure-string?":" new-line
+		(string-append
+			"JUMP("lbl-closure-string?");" new-line
+			lbl-string?":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2));" new-line
+			"	MOV(R0,INDD(R0,0));" new-line
+			"	CMP(R0,T_STRING);" new-line
+			"	JUMP_EQ("lbl-is-string");" new-line
+			"	MOV(R0,SOB_BOOLEAN_FALSE);" new-line
+			"	JUMP("lbl-end-string");" new-line
+			lbl-is-string":" new-line
+			"	MOV(R0,SOB_BOOLEAN_TRUE);" new-line
+			lbl-end-string":" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+		lbl-closure-string?":" new-line
                 (generate-primitive-closure lbl-string? addr) new-line
-        )))))
+		)))))
 
 (define primitive-zero?
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'zero? fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'zero? fvars-table))
                       (lbl-zero? (label-marker "Lprim_zero")  )
                       (lbl-closure-zero? (label-marker "Lmake_zero")  )
                      (lbl-is-zero? (label-marker "L_is_zero")  )
                      (lbl-end-zero (label-marker "L_end_zero")  ))
-        (string-append
-            "JUMP("lbl-closure-zero?");" new-line
-            lbl-zero?":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2));" new-line
-            "   MOV(R0,INDD(R0,1));" new-line
-            "   CMP(R0,IMM(0));" new-line
-            "   JUMP_EQ("lbl-is-zero?");" new-line
-            "   MOV(R0,SOB_BOOLEAN_FALSE);" new-line
-            "   JUMP("lbl-end-zero");" new-line
-            lbl-is-zero?":" new-line
-            "   MOV(R0,SOB_BOOLEAN_TRUE);" new-line
-            lbl-end-zero":" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-        lbl-closure-zero?":" new-line
+		(string-append
+			"JUMP("lbl-closure-zero?");" new-line
+			lbl-zero?":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2));" new-line
+			"	MOV(R0,INDD(R0,1));" new-line
+			"	CMP(R0,IMM(0));" new-line
+			"	JUMP_EQ("lbl-is-zero?");" new-line
+			"	MOV(R0,SOB_BOOLEAN_FALSE);" new-line
+			"	JUMP("lbl-end-zero");" new-line
+			lbl-is-zero?":" new-line
+			"	MOV(R0,SOB_BOOLEAN_TRUE);" new-line
+			lbl-end-zero":" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+		lbl-closure-zero?":" new-line
                 (generate-primitive-closure lbl-zero? addr) new-line
-        )))))
-        
+		)))))
+		
 (define primitive-vector?
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'vector? fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'vector? fvars-table))
                       (lbl-vector? (label-marker "Lprim_vector")  )
                       (lbl-closure-vector? (label-marker "Lmake_vector")  )
                      (lbl-is-vector (label-marker "L_is_vector")  )
                      (lbl-end-vector (label-marker "L_end_vector")  ))
-        (string-append
-            "JUMP("lbl-closure-vector?");" new-line
-            lbl-vector?":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2));" new-line
-            "   MOV(R0,INDD(R0,0));" new-line
-            "   CMP(R0,T_VECTOR);" new-line
-            "   JUMP_EQ("lbl-is-vector");" new-line
-            "   MOV(R0,SOB_BOOLEAN_FALSE);" new-line
-            "   JUMP("lbl-end-vector");" new-line
-            lbl-is-vector":" new-line
-            "   MOV(R0,SOB_BOOLEAN_TRUE);" new-line
-            lbl-end-vector":" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-        lbl-closure-vector?":" new-line
+		(string-append
+			"JUMP("lbl-closure-vector?");" new-line
+			lbl-vector?":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2));" new-line
+			"	MOV(R0,INDD(R0,0));" new-line
+			"	CMP(R0,T_VECTOR);" new-line
+			"	JUMP_EQ("lbl-is-vector");" new-line
+			"	MOV(R0,SOB_BOOLEAN_FALSE);" new-line
+			"	JUMP("lbl-end-vector");" new-line
+			lbl-is-vector":" new-line
+			"	MOV(R0,SOB_BOOLEAN_TRUE);" new-line
+			lbl-end-vector":" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+		lbl-closure-vector?":" new-line
                 (generate-primitive-closure lbl-vector? addr) new-line
-        )))))
+		)))))
 
 (define primitive-null?
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'null? fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'null? fvars-table))
                       (lbl-null? (label-marker "Lprim_null")  )
                       (lbl-closure-null? (label-marker "Lmake_null")  )
                      (lbl-is-null (label-marker "L_is_null")  )
                      (lbl-end-null (label-marker "L_end_null")  ))
-        (string-append
-            "JUMP("lbl-closure-null?");" new-line
-            lbl-null?":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2));" new-line
-            "   MOV(R0,INDD(R0,0));" new-line
-            "   CMP(R0,T_NIL);" new-line
-            "   JUMP_EQ("lbl-is-null");" new-line
-            "   MOV(R0,SOB_BOOLEAN_FALSE);" new-line
-            "   JUMP("lbl-end-null");" new-line
-            lbl-is-null":" new-line
-            "   MOV(R0,SOB_BOOLEAN_TRUE);" new-line
-            lbl-end-null":" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-        lbl-closure-null?":" new-line
+		(string-append
+			"JUMP("lbl-closure-null?");" new-line
+			lbl-null?":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2));" new-line
+			"	MOV(R0,INDD(R0,0));" new-line
+			"	CMP(R0,T_NIL);" new-line
+			"	JUMP_EQ("lbl-is-null");" new-line
+			"	MOV(R0,SOB_BOOLEAN_FALSE);" new-line
+			"	JUMP("lbl-end-null");" new-line
+			lbl-is-null":" new-line
+			"	MOV(R0,SOB_BOOLEAN_TRUE);" new-line
+			lbl-end-null":" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+		lbl-closure-null?":" new-line
                 (generate-primitive-closure lbl-null? addr) new-line
-        )))))
+		)))))
 
 (define primitive-char?
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'char? fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'char? fvars-table))
                       (lbl-char? (label-marker "Lprim_char")  )
                       (lbl-closure-char? (label-marker "Lmake_char")  )
                      (lbl-is-char (label-marker "L_is_char")  )
                      (lbl-end-char (label-marker "L_end_char")  ))
-        (string-append
-            "JUMP("lbl-closure-char?");" new-line
-            lbl-char?":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2));" new-line
-            "   MOV(R0,INDD(R0,0));" new-line
-            "   CMP(R0,T_CHAR);" new-line
-            "   JUMP_EQ("lbl-is-char");" new-line
-            "   MOV(R0,SOB_BOOLEAN_FALSE);" new-line
-            "   JUMP("lbl-end-char");" new-line
-            lbl-is-char":" new-line
-            "   MOV(R0,SOB_BOOLEAN_TRUE);" new-line
-            lbl-end-char":" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-        lbl-closure-char?":" new-line
+		(string-append
+			"JUMP("lbl-closure-char?");" new-line
+			lbl-char?":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2));" new-line
+			"	MOV(R0,INDD(R0,0));" new-line
+			"	CMP(R0,T_CHAR);" new-line
+			"	JUMP_EQ("lbl-is-char");" new-line
+			"	MOV(R0,SOB_BOOLEAN_FALSE);" new-line
+			"	JUMP("lbl-end-char");" new-line
+			lbl-is-char":" new-line
+			"	MOV(R0,SOB_BOOLEAN_TRUE);" new-line
+			lbl-end-char":" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+		lbl-closure-char?":" new-line
                 (generate-primitive-closure lbl-char? addr) new-line
-        ))))    )       
+		)))) 	)		
 
 (define primitive-integer?
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'integer? fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'integer? fvars-table))
                       (lbl-integer? (label-marker "Lprim_integer")  )
                       (lbl-closure-integer? (label-marker "Lmake_integer")  )
                      (lbl-is-integer (label-marker "L_is_integer")  )
                      (lbl-end-integer (label-marker "L_end_integer")  ))
-        (string-append
-            "JUMP("lbl-closure-integer?");" new-line
-            lbl-integer?":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2));" new-line
-            "   MOV(R0,INDD(R0,0));" new-line
-            "   CMP(R0,T_INTEGER);" new-line
-            "   JUMP_EQ("lbl-is-integer");" new-line
-            "   MOV(R0,SOB_BOOLEAN_FALSE);" new-line
-            "   JUMP("lbl-end-integer");" new-line
-            lbl-is-integer":" new-line
-            "   MOV(R0,SOB_BOOLEAN_TRUE);" new-line
-            lbl-end-integer":" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-        lbl-closure-integer?":" new-line
+		(string-append
+			"JUMP("lbl-closure-integer?");" new-line
+			lbl-integer?":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2));" new-line
+			"	MOV(R0,INDD(R0,0));" new-line
+			"	CMP(R0,T_INTEGER);" new-line
+			"	JUMP_EQ("lbl-is-integer");" new-line
+			"	MOV(R0,SOB_BOOLEAN_FALSE);" new-line
+			"	JUMP("lbl-end-integer");" new-line
+			lbl-is-integer":" new-line
+			"	MOV(R0,SOB_BOOLEAN_TRUE);" new-line
+			lbl-end-integer":" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+		lbl-closure-integer?":" new-line
                 (generate-primitive-closure lbl-integer? addr) new-line
-        )))))
-        
+		)))))
+		
 (define primitive-boolean?
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'boolean? fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'boolean? fvars-table))
                       (lbl-boolean? (label-marker "Lprim_boolean")  )
                       (lbl-closure-boolean? (label-marker "Lmake_boolean")  )
                      (lbl-is-boolean (label-marker "L_is_boolean")  )
                      (lbl-end-boolean (label-marker "L_end_boolean")  ))
-        (string-append
-            "JUMP("lbl-closure-boolean?");" new-line
-            lbl-boolean?":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2));" new-line
-        
-            "   MOV(R0,INDD(R0,0));" new-line
-            "   CMP(R0,T_BOOL);" new-line
-            "   JUMP_EQ("lbl-is-boolean");" new-line
-            "   MOV(R0,SOB_BOOLEAN_FALSE);" new-line
-            "   JUMP("lbl-end-boolean");" new-line
-            lbl-is-boolean":" new-line
-            "   MOV(R0,SOB_BOOLEAN_TRUE);" new-line
-            lbl-end-boolean":" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-        lbl-closure-boolean?":" new-line
+		(string-append
+			"JUMP("lbl-closure-boolean?");" new-line
+			lbl-boolean?":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2));" new-line
+		
+			"	MOV(R0,INDD(R0,0));" new-line
+			"	CMP(R0,T_BOOL);" new-line
+			"	JUMP_EQ("lbl-is-boolean");" new-line
+			"	MOV(R0,SOB_BOOLEAN_FALSE);" new-line
+			"	JUMP("lbl-end-boolean");" new-line
+			lbl-is-boolean":" new-line
+			"	MOV(R0,SOB_BOOLEAN_TRUE);" new-line
+			lbl-end-boolean":" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+		lbl-closure-boolean?":" new-line
                 (generate-primitive-closure lbl-boolean? addr) new-line
-        )))))
+		)))))
 
 (define primitive-char->integer
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'char->integer fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'char->integer fvars-table))
                       (lbl-char->integer (label-marker "Lprim_char_integer")  )
                       (lbl-closure-char->integer (label-marker "Lmake_char_integer")  ))
-        (string-append
-            "JUMP("lbl-closure-char->integer");" new-line
-            lbl-char->integer":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2)); // char" new-line ; param char
-            "   MOV(R0,INDD(R0,1));" new-line ;char value
-            "   PUSH(R0);" new-line 
-            "   CALL(MAKE_SOB_INTEGER);" new-line 
-            "   DROP(1);" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-        lbl-closure-char->integer":" new-line
+		(string-append
+			"JUMP("lbl-closure-char->integer");" new-line
+			lbl-char->integer":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2)); // char" new-line ; param char
+			"	MOV(R0,INDD(R0,1));" new-line ;char value
+			"	PUSH(R0);" new-line 
+			"	CALL(MAKE_SOB_INTEGER);" new-line 
+			"	DROP(1);" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+		lbl-closure-char->integer":" new-line
                 (generate-primitive-closure lbl-char->integer addr) new-line
-        
-        )))))
-            
+		
+		)))))
+			
 (define primitive-integer->char
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'integer->char fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'integer->char fvars-table))
                       (lbl-integer->char (label-marker "Lprim_integer_char")  )
                       (lbl-closure-integer->char (label-marker "Lmake_integer_char")  ))
-        (string-append
-            "JUMP("lbl-closure-integer->char");" new-line
-            lbl-integer->char":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2)); // char" new-line ; param char
-            "   MOV(R0,INDD(R0,1));" new-line ;char value
-            "   PUSH(R0);" new-line 
-            "   CALL(MAKE_SOB_CHAR);" new-line 
-            "   DROP(1);" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-        lbl-closure-integer->char":" new-line
+		(string-append
+			"JUMP("lbl-closure-integer->char");" new-line
+			lbl-integer->char":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2)); // char" new-line ; param char
+			"	MOV(R0,INDD(R0,1));" new-line ;char value
+			"	PUSH(R0);" new-line 
+			"	CALL(MAKE_SOB_CHAR);" new-line 
+			"	DROP(1);" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+		lbl-closure-integer->char":" new-line
                 (generate-primitive-closure lbl-integer->char addr) new-line
-        
-        )))))
-        
+		
+		)))))
+		
 (define primitive-car
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'car fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'car fvars-table))
                       (lbl-car (label-marker "Lprim_car")  )
                       (lbl-closure-car (label-marker "Lmake_primitive_car")  ))
                       
-        (string-append
-            "JUMP("lbl-closure-car");" new-line
-            lbl-car":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2));" new-line 
-            "   MOV(R0,INDD(R0,1));" new-line
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-            lbl-closure-car":" new-line
-            (generate-primitive-closure lbl-car addr) new-line
-            )))))
-            
+		(string-append
+			"JUMP("lbl-closure-car");" new-line
+			lbl-car":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2));" new-line 
+			"	MOV(R0,INDD(R0,1));" new-line
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+			lbl-closure-car":" new-line
+			(generate-primitive-closure lbl-car addr) new-line
+			)))))
+			
 (define primitive-cdr
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'cdr fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'cdr fvars-table))
                       (lbl-cdr (label-marker "Lprim_cdr")  )
                       (lbl-closure-cdr (label-marker "Lmake_primitive_cdr")  ))
                       
-        (string-append
-            "JUMP("lbl-closure-cdr");" new-line
-            lbl-cdr":" new-line
-            "   PUSH(FP);" new-line
-            "   MOV(FP, SP);" new-line
-            "   MOV(R0,FPARG(2));" new-line 
-            "   MOV(R0,INDD(R0,2));" new-line 
-            "   POP(FP);" new-line
-            "   RETURN;" new-line
-            lbl-closure-cdr":" new-line
-            (generate-primitive-closure lbl-cdr addr) new-line
-            )))))
+		(string-append
+			"JUMP("lbl-closure-cdr");" new-line
+			lbl-cdr":" new-line
+			"	PUSH(FP);" new-line
+			"	MOV(FP, SP);" new-line
+			"	MOV(R0,FPARG(2));" new-line 
+			"	MOV(R0,INDD(R0,2));" new-line 
+			"	POP(FP);" new-line
+			"	RETURN;" new-line
+			lbl-closure-cdr":" new-line
+			(generate-primitive-closure lbl-cdr addr) new-line
+			)))))
 
 (define prim-string-to-symbol
 (lambda (constants-table fvars-table frst_sym_address)
-    (lambda ()
-        (let ((addr (search-fvar 'string->symbol fvars-table))
+	(lambda ()
+		(let ((addr (search-fvar 'string->symbol fvars-table))
                       (lbl-str->sym (label-marker "Lprim_str_sym")  )
                       (lbl-closure-str->sym (label-marker "Lmake_prim_str_sym")  )
                       (lbl-done (label-marker "L_str_sym_done")  )
@@ -4558,10 +4558,10 @@
                       (lbl-new-sym (label-marker "L_str_sym_new_sym"))
                       )
                       
-        (string-append
-            "JUMP("lbl-closure-str->sym");" new-line
-            lbl-str->sym":" new-line
-            "  PUSH(FP);" new-line
+		(string-append
+			"JUMP("lbl-closure-str->sym");" new-line
+			lbl-str->sym":" new-line
+			"  PUSH(FP);" new-line
                         "  MOV(FP,SP);" new-line
                         "  PUSH(R11);" new-line
                         "  PUSH(R12);" new-line
@@ -4574,25 +4574,25 @@
                         "  JUMP_EQ("lbl-new-sym"); " new-line
                         "  MOV(R13,INDD(R11,1)); " new-line ; if the curr symbol exists -> point r13 to the string address
                         "  MOV(R0,R11); " new-line ; r11 = r0 = curr symbol {to return it in case we have match}
-              ; comapring the strings  
-            "      
-            MOV(R15,SOB_BOOLEAN_FALSE); \n
-            CMP(INDD(R13,1),INDD(R12,1)); \n
-            JUMP_NE(L_compare_strings_finish); \n
-            MOV(R3,INDD(R13,1)); \n
-            ADD(R3,2); \n
-            MOV(R4,2); \n
-            L_compare_strings_loop: \n
-            CMP(R4,R3);  \n
-            JUMP_EQ(L_compare_strings_true); \n
-            CMP(INDD(R13,R4),INDD(R12,R4));  \n
-            JUMP_NE(L_compare_strings_finish); \n
-            INCR(R4); \n
-            JUMP(L_compare_strings_loop); \n
-            L_compare_strings_true: \n
-            MOV(R15,SOB_BOOLEAN_TRUE); \n 
-            L_compare_strings_finish: \n"
-        "CMP(R15,SOB_BOOLEAN_TRUE);\n"
+			  ; comapring the strings  
+			"      
+			MOV(R15,SOB_BOOLEAN_FALSE); \n
+			CMP(INDD(R13,1),INDD(R12,1)); \n
+			JUMP_NE(L_compare_strings_finish); \n
+			MOV(R3,INDD(R13,1)); \n
+			ADD(R3,2); \n
+			MOV(R4,2); \n
+			L_compare_strings_loop: \n
+			CMP(R4,R3);  \n
+			JUMP_EQ(L_compare_strings_true); \n
+			CMP(INDD(R13,R4),INDD(R12,R4));  \n
+			JUMP_NE(L_compare_strings_finish); \n
+			INCR(R4); \n
+			JUMP(L_compare_strings_loop); \n
+			L_compare_strings_true: \n
+			MOV(R15,SOB_BOOLEAN_TRUE); \n 
+			L_compare_strings_finish: \n"
+		"CMP(R15,SOB_BOOLEAN_TRUE);\n"
                         "  JUMP_EQ("lbl-done"); " new-line
                         "  MOV(R14, R11); " new-line
                         "  MOV(R11, INDD(R11,2)); " new-line
@@ -4616,9 +4616,9 @@
                         "  POP(FP);" new-line
                         "  RETURN;" new-line
 
-            lbl-closure-str->sym":" new-line
-            (generate-primitive-closure lbl-str->sym addr) new-line
-            )))))
+			lbl-closure-str->sym":" new-line
+			(generate-primitive-closure lbl-str->sym addr) new-line
+			)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4652,11 +4652,11 @@
 (define gen-epilogue-sexpr
   (lambda (lbl) 
   (let ((L_epilogueSexpr (label-marker lbl))
-    (DOne_label (label-marker "Done__lbl"))
+	(DOne_label (label-marker "Done__lbl"))
   )
       (string-append
        L_epilogueSexpr":"
-       "  /*    print the content of R0 */" new-line
+       "  /*	print the content of R0 */" new-line
        "  CMP(R0, SOB_VOID);" new-line
        "  JUMP_EQ("DOne_label");" new-line
        "  PUSH(R0);" new-line
@@ -4669,9 +4669,9 @@
 (define compile-scheme-file      
   (lambda (src target)
   (let* ( (sexprs  (test-s <sexpr> (file->string src)))
-        (with-support-sexprs (test-s <sexpr> (file->string "SchemePrims.scm")))
-        (pe-sexprs-list (map (lambda (sexpr) (ass3-parser sexpr)) sexprs ))     
-        (pe-With-support (map (lambda (expr)
+	    (with-support-sexprs (test-s <sexpr> (file->string "SchemePrims.scm")))
+	    (pe-sexprs-list (map (lambda (sexpr) (ass3-parser sexpr)) sexprs ))	    
+	    (pe-With-support (map (lambda (expr)
                           (ass3-parser expr))
                         with-support-sexprs))                       
              (pe-lst (append pe-With-support pe-sexprs-list)) 
@@ -4695,5 +4695,5 @@
                                          (gen-epilogue-sexpr "L_epilogueSexpr")))
                                     pe-lst)))
               (final-code (string-append prologue memory-init outCode epilogue ))
-        ) 
+	    ) 
         (write-to-file target final-code))))
