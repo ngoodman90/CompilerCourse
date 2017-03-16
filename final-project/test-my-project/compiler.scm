@@ -1238,178 +1238,152 @@
 									
 									
 ; ####################################### Assignment 3 #######################################
+       
+(define lambda-simple?
+  (lambda (expr)
+    (equal? 'lambda-simple (car expr))))
 
-(define create_set_exprs
-    (lambda (varss_ valuess_ lst) ; Assume varss and valuess are of the same length
-        (cond  ( (null? varss_) lst)
-               ( else (create_set_exprs (cdr varss_) (cdr valuess_) (append lst (list 
-               
-               `(set (var ,(car varss_)) ,@(car valuess_))
-               
-               )))))))	
-               
-(define create_falsee_ 
-    (lambda (varss_)
-        (map (lambda (x) `(const #f)) varss_)))
+(define lambda-opt?
+  (lambda (expr)
+    (equal? 'lambda-opt (car expr))))
 
-(define transform-p-letrec-to-lambda 
-    (lambda (letrec-exp)
-        (let* ( (bindings_ (cadr letrec-exp))
-                (body1_  (cddr letrec-exp))
-                (varss_ (map car bindings_))
-                (create_false_ (create_falsee_ varss_))
-                (valuess_ (map cdr bindings_))
-                (set_seq  `(seq (,@(create_set_exprs varss_ valuess_ '()) ,@body1_) ))
-                ;; function that return list of seqences of sets of the varss and the valuess...
-                (lambda_expss `(lambda-simple ,varss_ ,set_seq ))
-                (applic_exp `(applic ,lambda_expss ,create_false_)  )
-                )
-               applic_exp
-        
-                )))
+(define lambda-var?
+  (lambda (expr)
+    (equal? 'lambda-var (car expr))))
 
-(define helper-AH (lambda (lst) 
+(define lambda-expr? 
+  (lambda (expr)
+    (or (lambda-simple? expr) (lambda-opt? expr) (lambda-var? expr))))
 
-            ( helper-eliminate-AH (eliminate-nested-defines1 lst (lambda (x y)
-            (if (null? x) 
-		lst 
-	      `(,(transform-p-letrec-to-lambda `(letrec ,(mymap (lambda (i)  `(,(cadr (cadr i)) ,(caddr i))) x) ,@y)))))))
-))
-
-;help functions        
-(define is_lambda_simple?
-    (lambda (exps)
-      (eq? (car exps) 'lambda-simple)))
-
-(define is_lambda_opt?
-    (lambda (exps)
-      (eq? (car exps) 'lambda-opt)))
-      
-(define is_lambda_var?
-    (lambda (exps)
-      (eq? (car exps) 'lambda-var)))
-;bodies     
-(define get_body_of_lambda_simple
-    (lambda (lam_exps)
-	(caddr lam_exps)))
+(define lambda-simple-body
+  (lambda (expr)
+    (caddr expr)))
 	
-(define get_body_of_lambda_opt
-    (lambda (lam_exps)
-	(cadddr lam_exps)))
+(define lambda-opt-body
+  (lambda (expr)
+    (cadddr expr)))
 
-(define get_body_of_lambda_variadic
-    (lambda (lam_exps)
-	(caddr lam_exps)))
-;;parms
-(define lambda_simple_paramters
-  (lambda (lam_exps)
-    (cadr lam_exps)))
+(define lambda-var-body
+  (lambda (expr)
+    (caddr expr)))
+
+(define lambda-simple-parameters
+  (lambda (expr)
+    (cadr expr)))
     
-(define lambda_opt_paramters
-  (lambda (lam_exps)
-   (append (cadr lam_exps) (list (caddr lam_exps)))))
+(define lambda-opt-parameters
+  (lambda (expr)
+   (append (cadr expr) (list (caddr expr)))))
    
-(define lambda_variadic_paramters
-  (lambda (lam_exps)
-    (list (cadr lam_exps))))
-      
-(define is_lambda?
-(lambda (pes)
-    (or (eq? (car pes) 'lambda-simple) (eq? (car pes) 'lambda-opt) (eq? (car pes) 'lambda-var))))
-
-
-    (define helper-eliminate-AH (lambda (lst)     
- (mymap (lambda (x)    
- 
-    (if  (or (null? x) (not (list? x)))  
-                 x
-                 (if (or (is_lambda_simple? x) (is_lambda_var? x))
-                           `(,(car x) ,(cadr x) ,@(helper-AH (cddr x)))
-                 (if (is_lambda_opt? x)
-                           `(,(car x) ,(cadr x) ,(caddr x) ,@(helper-AH (cdddr x)))
-                 
-                 (helper-eliminate-AH x)   )
- 
- ) )) lst
-
-)))
-;;     (define helper-eliminate-AH (lambda (lst)     
-;; 
-;;  (mymap (lambda (x)    
-;;  
-;;     (if  (or (null? x) (not (list? x)))     
-;;                  x
-;;                  (if (or (equal? (car x) 'lambda-simple) (equal? (car x) 'lambda-var))
-;;                            `(,(car x) ,(cadr x) ,@(helper-AH (cddr x)))
-;;                  (if (equal? (car x) 'lambda-opt)
-;;                            `(,(car x) ,(cadr x) ,(caddr x) ,@(helper-AH (cdddr x)))
-;;                  
-;;                  (helper-eliminate-AH x)   )
-;;  
-;;  ) )) lst
-;; 
-;; )))
+(define lambda-var-parameters
+  (lambda (expr)
+    (list (cadr expr))))
     
-    
-
-(define eliminate-nested-defines (lambda (lst) 
-      (car (helper-eliminate-AH `(,lst)))
-))
-
-      
-(define eliminate-nested-defines1
-  (lambda (pes ret-ds+es)
-      (if (null? pes) (ret-ds+es '() '())
-	    (eliminate-nested-defines1 (cdr pes)
-		  (lambda (ds es)
-			  (cond ( (eq? (caar pes) 'def)
-				  (ret-ds+es (cons (car pes) ds ) es))
-				  ( (eq? (caar pes) 'seq)
-				      (eliminate-nested-defines1 (cadar pes)
-				      (lambda (ds1 es1 ) (ret-ds+es
-				      (append ds1 ds)
-				      (append es1 es)))))
-				 (else  (ret-ds+es ds (cons (car pes) es))))
-      )))))
-      
 ; ####################################### Eliminate Nested Defines #######################################
 
-(define first-part
-    (lambda (begining ending) begining))
-    
-(define second-part
-    (lambda (begining ending) ending))
-    
-(define perform-define-split
-    (lambda (var func)
-        (if (not (null? var))
-            (perform-define-split
-                (cdr var)
-                (lambda (expr1 expr2)
-                        (if (eq? (caar var) 'def)
-                            (func (cons (car var) expr1) expr2)
-                            (if (eq? (caar var) 'seq)
-			        (perform-define-split
-                                    (cadar var)
-                                    (lambda (expr3 expr4)
-                                            (func (append expr3 expr1)
-                                                  (append expr4 expr2))))
-                                (func expr1 (cons (car var) expr2))))))
-            (func '() '()))))
-                 
-(define handle-sequence
-    (lambda (expr1 expr2)
-        `(seq (,@(map (lambda (a) `(set ,(cadr a) ,(eliminate-nested-defines (caddr a)))) expr1)
-               ,@(map eliminate-nested-defines expr2)))))
-            
-(define eliminate-inner-lambda-nested-defines
-    (lambda (content)
-        (let ((expr1 (perform-define-split content first-part))
-              (expr2 (perform-define-split content second-part)))
-             (if (not (null? expr1))
-                `((applic (lambda-simple ,(map cadadr expr1) ,(handle-sequence expr1 expr2)) ,(map (lambda (a) '(const #f)) expr1)))
-                (map eliminate-nested-defines content)))))
-            
+(define create_set_expressions
+  (lambda (vars vals lst)
+    (if (null? vars)
+        lst
+        (create_set_expressions (cdr vars) (cdr vals) (append lst (list `(set (var ,(car vars)) ,@(car vals))))))))
+               
+(define init_to_false 
+  (lambda (vars)
+    (map (lambda (x) `(const #f)) vars)))
+
+(define transform_letrec_to_lambda 
+  (lambda (expr)
+    (let* ((vars_and_vals (cadr expr))
+            (body  (cddr expr))
+            (vars (map car vars_and_vals))
+            (vars_init (init_to_false vars))
+            (vals (map cdr vars_and_vals))
+            (set_seq `(seq (,@(create_set_expressions vars vals '()) ,@body)))
+            (lambda_expss `(lambda-simple ,vars ,set_seq))
+            (applic_exp `(applic ,lambda_expss ,vars_init)))
+        applic_exp)))
+
+(define e-n-d-1
+  (lambda (pes ret)
+      (if (null? pes)
+        (ret '() '())
+        (e-n-d-1 (cdr pes)
+            (lambda (ds es)
+                    (cond ((eq? (caar pes) 'def)
+                            (ret (cons (car pes) ds ) es))
+                            ((eq? (caar pes) 'seq)
+                                (e-n-d-1 (cadar pes)
+                                (lambda (ds1 es1 ) (ret
+                                (append ds1 ds)
+                                (append es1 es)))))
+                            (else  (ret ds (cons (car pes) es)))))))))
+
+(define my-map 
+  (lambda (func lst)
+    (if (null? lst)
+        '()
+        (cons (func (car lst)) (my-map func (cdr lst))))))
+
+(define e-n-d-2
+  (lambda (lst)
+    (e-n-d-3 (e-n-d-1 lst
+        (lambda (x y)
+            (if (null? x) 
+                lst
+                `(,(transform_letrec_to_lambda `(letrec ,(my-map (lambda (i)  `(,(cadr (cadr i)) ,(caddr i))) x) ,@y)))))))))
+
+(define e-n-d-3
+  (lambda (lst)     
+    (my-map
+        (lambda (x)
+            (cond ((or (null? x) (not (list? x))) x)
+                ((or (lambda-simple? x) (lambda-var? x)) `(,(car x) ,(cadr x) ,@(e-n-d-2 (cddr x))))
+                ((lambda-opt? x) `(,(car x) ,(cadr x) ,(caddr x) ,@(e-n-d-2 (cdddr x))))
+                (else (e-n-d-3 x))))
+            lst)))
+
+(define eliminate-nested-defines
+  (lambda (lst) 
+    (car (e-n-d-3 `(,lst)))))
+
+; ####################################### Eliminate Nested Defines #######################################
+
+;; (define first-part
+;;     (lambda (begining ending) begining))
+;;     
+;; (define second-part
+;;     (lambda (begining ending) ending))
+;;     
+;; (define perform-define-split
+;;     (lambda (var func)
+;;         (if (not (null? var))
+;;             (perform-define-split
+;;                 (cdr var)
+;;                 (lambda (expr1 expr2)
+;;                         (if (eq? (caar var) 'def)
+;;                             (func (cons (car var) expr1) expr2)
+;;                             (if (eq? (caar var) 'seq)
+;; 			        (perform-define-split
+;;                                     (cadar var)
+;;                                     (lambda (expr3 expr4)
+;;                                             (func (append expr3 expr1)
+;;                                                   (append expr4 expr2))))
+;;                                 (func expr1 (cons (car var) expr2))))))
+;;             (func '() '()))))
+;;                  
+;; (define handle-sequence
+;;     (lambda (expr1 expr2)
+;;         `(seq (,@(map (lambda (a) `(set ,(cadr a) ,(eliminate-nested-defines (caddr a)))) expr1)
+;;                ,@(map eliminate-nested-defines expr2)))))
+;;             
+;; (define eliminate-inner-lambda-nested-defines
+;;     (lambda (content)
+;;         (let ((expr1 (perform-define-split content first-part))
+;;               (expr2 (perform-define-split content second-part)))
+;;              (if (not (null? expr1))
+;;                 `((applic (lambda-simple ,(map cadadr expr1) ,(handle-sequence expr1 expr2)) ,(map (lambda (a) '(const #f)) expr1)))
+;;                 (map eliminate-nested-defines content)))))
+;;       
 ;; (define eliminate-nested-defines
 ;;     (lambda (expr)
 ;;         (let
@@ -1427,152 +1401,163 @@
 
 ; ####################################### Boxing of Variables #######################################
 
-; Boxing of variables
-
-
+(define set?
+  (lambda (expr var)
+    (equal? var (cadr expr))))
  
- 
-; It is set (via a set!-expression) somewhere in the body of the procedure
+(define var_set?
+  (lambda (body var)
+    (ormap
+        (lambda (x)
+            (if (and (not (null? x)) (list? x))
+                (if (and (eq? 'set (car x)) (set? x var))
+                    #t
+                    (var_set?  x var ))
+                #f))
+        (car (list body)))))
 
-(define is_set_?
-  (lambda (exps var)
-	 ( equal? var ( cadr exps) )))
- 
+(define not_member?
+  (lambda (x list)
+     (if (null? list)
+        #t                                
+        (if (equal? x (car list))
+            #f                  
+            (not_member? x (cdr list))))))
 
+(define variable_in_parameters?
+  (lambda (lst-lambda var)
+    (cond ((equal? (car lst-lambda) 'lambda-simple)  (not_member? (cadr var) (lambda-simple-parameters lst-lambda)))      
+        ((equal? (car lst-lambda) 'lambda-var)  (not_member? (cadr var) (lambda-var-parameters lst-lambda)))
+        ((equal? (car lst-lambda) 'lambda-opt)  (not_member? (cadr var) (lambda-opt-parameters lst-lambda))))))
 
-	
-(define is_var_set?
-      (lambda (lambda_body var)
-	(ormap (lambda (y)
-	 (if (and (not (null? y)) (list? y))
-	
-	 (if (and (eq? 'set (car y)) (is_set_? y var)) #t
-	 
-		  (is_var_set?  y var ))
-		      #f
-		  )) (car (list lambda_body)) )
-		  
-		  
-	))
-	
-	
-	
-	
-;It has a get-occurrence somewhere in the body of the procedure. A get means that it either
-;appears as a (pvar name minor) or (bvar name major minor).	
+(define transform_to_box-get
+  (lambda (body var)
+    (map
+        (lambda (x)
+                (if (and (not (null? x)) (list? x))
+                    (if (and (lambda-expr? x) (not (variable_in_parameters? x var)))
+                        x
+                        (if (equal? (car x) 'box-set)
+                            `(box-set ,(cadr x) ,@(transform_to_box-get `(,(caddr x)) var ))       ; 
+                            (if (equal? var x)
+                                `(box-get ,x)
+                                (transform_to_box-get x var))))
+                    x))
+        body)))
 
+(define transform_to_box-set
+  (lambda (body var)
+    (map
+        (lambda (x)
+            (if (and (not (null? x)) (list? x))
+                (if (and (lambda-expr? x) (not (variable_in_parameters? x var)))
+                    x
+                    (if (and (equal? (car x) 'set) (equal? var (cadr x)))
+                        `(box-set ,(cadr x) ,(transform_to_box-set (caddr x) var))  
+                        (transform_to_box-set x var)))
+                x))
+        body)))
+        
+(define bound?
+  (lambda (body var)       
+    (ormap
+        (lambda (x)
+            (if  (or (null? x) (not (list? x)))
+                #f
+                (if (and (equal? x var))
+                    #t 
+                    (if  (lambda-expr? x)
+                        (if (not (variable_in_parameters? x var))
+                            #f
+                            (bound? x var))
+                        (bound? x var)))))
+        body)))
 
-	
-(define is_get-occurrence_var?
-      (lambda (lambda_body var)
-	   (ormap (lambda (y)
-	 (if (and (not (null? y)) (list? y))
-	 
-	 (if (equal? var y) #t
-	     (if  (eq? 'set (car y))   
-	                 ( is_get-occurrence_var? (cddr y)  var)
-	     (if (and (is_lambda? y) (not (var_in_lambda_params y var)))
-	                       #f
-		  (is_get-occurrence_var?  y var ))))
-		  #f
-		  )) (car (list lambda_body)) )
-		  
-	   
-	   ))
-	   
-(define change_to_box-get
-    (lambda (lambda_body var)
-     
-	(map (lambda (y)
-	 	 (if (and (not (null? y)) (list? y))
-	 	 (if (and (is_lambda? y) (not (var_in_lambda_params y var))) y
-		(if (equal? (car y) 'box-set) `(box-set ,(cadr y) ,@(change_to_box-get `(,(caddr y)) var ))       ; 
-	 (if  (equal? var y) `(box-get ,y)  
-	 (change_to_box-get y var ))))
-	 y
-	   
-		  ) )lambda_body)))
-(define change_to_box-set
-    (lambda (lambda_body var)
-     
-	(map (lambda (y)
-	 	 (if (and (not (null? y)) (list? y))
-		      (if (and (is_lambda? y) (not (var_in_lambda_params y var))) y
-	 (if (and (equal? (car y) 'set) (equal? var (cadr y)))
-	 `(box-set ,(cadr y) ,(change_to_box-set (caddr y) var))  
-	 (change_to_box-set y var )
-	 ))
-	 
-	 y
-	   
-		  ) )lambda_body)))  
+(define variable_appears?
+  (lambda (body var)
+    (ormap
+        (lambda (x)
+            (if (and (not (null? x)) (list? x))
+                (if (equal? var x)
+                    #t
+                    (if (eq? 'set (car x))   
+                        (variable_appears? (cddr x) var)
+                        (if (and (lambda-expr? x) (not (variable_in_parameters? x var)))
+                            #f
+                            (variable_appears? x var))))
+                #f))
+        (car (list body)))))
 
-(define helper_Do_box_and_get 
-  (lambda (lambds parms body_)
-      (cond ( (or (not (list? parms)) (null? parms)) lambds ) 
-	      ( (and (is_Bound? body_ `(var ,(car parms)))  (is_var_set? body_ `(var ,(car parms))) (is_get-occurrence_var? body_ `(var ,(car parms))))
-	      (helper_Do_box_and_get (change_to_box-get (change_to_box-set lambds `(var ,(car parms))) `(var ,(car parms)))  (cdr parms) body_))
-	      
-	      (else (helper_Do_box_and_get lambds (cdr parms) body_))
-	      )
-    ))
-  
-  
+(define get_lambda 
+  (lambda (lambdas params body)
+    (cond ((or (not (list? params)) (null? params)) lambdas) 
+        ((and (bound? body `(var ,(car params)))  (var_set? body `(var ,(car params))) (variable_appears? body `(var ,(car params))))
+            (get_lambda (transform_to_box-get (transform_to_box-set lambdas `(var ,(car params))) `(var ,(car params)))  (cdr params) body))
+        (else (get_lambda lambdas (cdr params) body)))))
+
+(define get_lambda_parameters
+  (lambda (lambdas)
+    (cond ((eq? (car lambdas) 'lambda-simple)
+            (lambda-simple-parameters lambdas))
+        ((eq? (car lambdas) 'lambda-opt)
+            (lambda-opt-parameters lambdas))
+        ((eq? (car lambdas) 'lambda-var)
+            (lambda-var-parameters lambdas)))))
+            
+(define get_lambda_body
+  (lambda (lambdas)
+    (cond ((eq? (car lambdas) 'lambda-simple)
+            (lambda-simple-body lambdas))
+        ((eq? (car lambdas) 'lambda-opt)
+            (lambda-opt-body lambdas))
+        ((eq? (car lambdas) 'lambda-var)
+            (lambda-var-body lambdas)))))
+        
 (define box-set_help
-      (lambda (lambdas)
-	  (let* ( (parama1 (cond ( (eq? (car lambdas) 'lambda-simple)  (lambda_simple_paramters lambdas))
-				  ( (eq? (car lambdas) 'lambda-opt) 	(lambda_opt_paramters lambdas))
-				  ( (eq? (car lambdas) 'lambda-var)  (lambda_variadic_paramters lambdas))   ))
-				  
-		  (body_  (cond ( (eq? (car lambdas) 'lambda-simple)  `(,(get_body_of_lambda_simple lambdas)))
-				  ( (eq? (car lambdas) 'lambda-opt) 	`(,(get_body_of_lambda_opt lambdas)))
-				  ( (eq? (car lambdas) 'lambda-var) `(,(get_body_of_lambda_variadic lambdas)))   ))  
-		
-		(lambdd (helper_Do_box_and_get  lambdas parama1 body_))
-		
-		(body_1  (cond ( (eq? (car lambdd) 'lambda-simple)  (get_body_of_lambda_simple lambdd))
-				  ( (eq? (car lambdd) 'lambda-opt) 	(get_body_of_lambda_opt lambdd))
-				  ( (eq? (car lambdd) 'lambda-var) (get_body_of_lambda_variadic lambdd))   ))
-		;this willl give us list of if the three conditions occur ==> (set (pvar name minor) (box (pvar name minor)))	
-		(sets_to_add_after_lambda 
-		(filter (lambda (t) (not (null? t))) (mymap 
-					    (lambda (p)
-		      (if (and  (is_Bound? body_ `(var ,p))  (is_var_set? body_ `(var ,p)) (is_get-occurrence_var? body_ `(var ,p))) 
-			      `(set (var ,p) (box (var ,p)))
-			      '() )
-				    ) parama1 )
-				 ))
-		)
+  (lambda (lambdas)
+    (let* ((parama1 (get_lambda_parameters lambdas))
+            (body  (get_lambda_body lambdas))  
+        
+        (lambdd (get_lambda lambdas parama1 body))
+        
+        (body_1  (cond ((eq? (car lambdd) 'lambda-simple)  (lambda-simple-body lambdd))
+                            ((eq? (car lambdd) 'lambda-opt) 	(lambda-opt-body lambdd))
+                            ((eq? (car lambdd) 'lambda-var) (lambda-var-body lambdd))   ))
+        ;this willl give us list of if the three conditions occur ==> (set (pvar name minor) (box (pvar name minor)))	
+        (sets_to_add_after_lambda 
+        (filter (lambda (t) (not (null? t))) (my-map 
+                                    (lambda (p)
+                (if (and  (bound? body `(var ,p))  (var_set? body `(var ,p)) (variable_appears? body `(var ,p))) 
+                        `(set (var ,p) (box (var ,p)))
+                        '())) parama1))))
 
-		((lambda (xxx) 
-		    (cond ( (is_lambda_var? xxx)
-		    `( ,(car xxx) ,@parama1 ,(caddr xxx)))
-			((is_lambda_opt? xxx)
-			`( ,(car xxx) ,(reverse (cdr (reverse parama1))) ,(car (reverse parama1)) ,(caddr xxx)) )
-		    ( (is_lambda_simple? xxx)
-		    `( ,(car xxx) ,parama1 ,(caddr xxx)))
-		
-		))
-		;;now we want to add 
-		(if (> (length sets_to_add_after_lambda)  0)
-		(if (equal? (car body_1) 'seq)
-		 `( ,(car lambdd) ,parama1   (seq (,@sets_to_add_after_lambda ,@(cadr  body_1))))
-		`( ,(car lambdd) ,parama1   (seq (,@sets_to_add_after_lambda , body_1))))
-		`( ,(car lambdd) ,parama1   , body_1)))
-				  
-      )))
+        ((lambda (xxx) 
+            (cond ((lambda-var? xxx)
+            `( ,(car xxx) ,@parama1 ,(caddr xxx)))
+                ((lambda-opt? xxx)
+                `( ,(car xxx) ,(reverse (cdr (reverse parama1))) ,(car (reverse parama1)) ,(caddr xxx)) )
+            ((lambda-simple? xxx)
+            `( ,(car xxx) ,parama1 ,(caddr xxx)))
+        
+        ))
+        ;;now we want to add 
+        (if (> (length sets_to_add_after_lambda)  0)
+        (if (equal? (car body_1) 'seq)
+            `( ,(car lambdd) ,parama1   (seq (,@sets_to_add_after_lambda ,@(cadr  body_1))))
+        `( ,(car lambdd) ,parama1   (seq (,@sets_to_add_after_lambda , body_1))))
+        `( ,(car lambdd) ,parama1   , body_1))))))
       
 (define box-set_
-      (lambda (eliminate_pes)
-     (map (lambda (y)
-	    (if (or (null? y) (not (list? y) ) )
-		  y
-		 (if (is_lambda? y) 
-		 (box-set_ (box-set_help y)) 
-		 
-		 (box-set_ y)
-	      
-	      )))eliminate_pes)))
+  (lambda (eliminate_pes)
+     (map
+        (lambda (x)
+            (if (or (null? x) (not (list? x) ) )
+                x
+                (if (lambda-expr? x) 
+                    (box-set_ (box-set_help x)) 
+                    (box-set_ x))))
+        eliminate_pes)))
+   
 (define box-set
           (lambda (eliminate_pes)
     (car (box-set_ `(,eliminate_pes)))))
@@ -1713,22 +1698,6 @@
 ;;                 (else `(,(box-set (car expr)) ,@(box-set (cdr expr)))))))                                                       ; everything else
 	      
 ; ####################################### Removing Redundant Applications #######################################
-
-(define lambda-simple?
-  (lambda (expr)
-    (equal? 'lambda-simple (car expr))))
-
-(define lambda-opt?
-  (lambda (expr)
-    (equal? 'lambda-opt (car expr))))
-
-(define lambda-var?
-  (lambda (expr)
-    (equal? 'lambda-var (car expr))))
-
-(define lambda-expr? 
-  (lambda (expr)
-    (or (lambda-simple? expr) (lambda-opt? expr) (lambda-var? expr))))
     
 (define null-or-not-pair?
   (lambda (expr)
@@ -1758,58 +1727,6 @@
     ))
 
 ; ####################################### Annotating Variables With Their Lexical Address #######################################
-	      
-;;**part 5
-
-(define (Notmember? x list)
-     (if (null? list) #t                                
-         (if (equal? x (car list)) #f                  
-              (Notmember? x (cdr list))))) 
-        
-
- 
-(define var_in_lambda_params (lambda (lst-lambda var)
-      (cond ((equal? (car lst-lambda) 'lambda-simple)  (Notmember? (cadr var) (lambda_simple_paramters lst-lambda) ))      
-            ((equal? (car lst-lambda) 'lambda-var)  (Notmember? (cadr var) (lambda_variadic_paramters lst-lambda) ))
-            ((equal? (car lst-lambda) 'lambda-opt)  (Notmember? (cadr var) (lambda_opt_paramters lst-lambda) ))
-            )
-      ))
- 
- (define is_Bound?
-  (lambda (lambda_body var)
-  
- (is_check_if_bound1? lambda_body var 0)  ))
-       
-        
-  (define is_check_if_bound1? (lambda (lambda_body var level)       
-                     (ormap (lambda (x)    
- 
-                          (if  (or (null? x) (not (list? x)))
-                                                    #f
-                          (if (and (equal? x var) (> level 0))
-                                       #t
-                                       
-                                     
-                 (if  (is_lambda? x)
-                         (if (not (var_in_lambda_params x var))
-                             #f
-                         (is_check_if_bound1?  x var (+ 1 level)))
-                        (is_check_if_bound1? x var level))
- 
-                                  )      ) ) lambda_body)      
-      ))
-
-
-    
-;Part 6
-;Annotating Variables with their Lexical address
-
-;; overright the mao by mymap
-(define (mymap f lst)
-  (if (null? lst)
-      '()
-      (cons (f (car lst))
-            (mymap f (cdr lst)))))
 
             
 ;;here we implement part 6
@@ -1818,10 +1735,10 @@
 (set! c_lambdas_counter -1)		  
 (define change_pvar
     (lambda (lambds var level place)
-    (mymap (lambda (x)
+    (my-map (lambda (x)
     (if (and (not (null? x)) (list? x))
 	      
-	    (if (is_lambda? x ) (change_pvar x  var (+ 1 level) place)
+	    (if (lambda-expr? x ) (change_pvar x  var (+ 1 level) place)
 	    (if (and (= 0 level) (equal? x var) )
 		`(pvar ,(cadr var) ,place)
 		(if (and (not (= 0 level)) (equal? x var) )
@@ -1849,9 +1766,9 @@
 
 (define pe->lex-pe_help
       (lambda (lambdas)
-	  (let* ( (parama1 (cond ( (eq? (car lambdas) 'lambda-simple)  (lambda_simple_paramters lambdas))
-				  ( (eq? (car lambdas) 'lambda-opt) 	(lambda_opt_paramters lambdas))
-				  ( (eq? (car lambdas) 'lambda-var) (lambda_variadic_paramters lambdas))   ))
+	  (let* ((parama1 (cond ((eq? (car lambdas) 'lambda-simple)  (lambda-simple-parameters lambdas))
+				  ((eq? (car lambdas) 'lambda-opt) 	(lambda-opt-parameters lambdas))
+				  ((eq? (car lambdas) 'lambda-var) (lambda-var-parameters lambdas))   ))
 	      
 		
 		;(lambdd (it  lambdas parama1 0))
@@ -1869,7 +1786,7 @@
       
 (define var_toFvar
   (lambda (pes)
-     (mymap (lambda (y)
+     (my-map (lambda (y)
 	    (if (or (null? y) (not (list? y) ) )
 		  y
 		 (if (equal? (car y) 'var) 
@@ -1881,15 +1798,12 @@
       
 (define pe->lex-pe_rec
       (lambda (pes)
-     (mymap (lambda (y)
+     (my-map (lambda (y)
 	    (if (or (null? y) (not (list? y) ) )
 		  y
-		 (if (is_lambda? y) 
+		 (if (lambda-expr? y) 
 		 (pe->lex-pe_help (pe->lex-pe_rec y))
-		 (pe->lex-pe_rec y)
-	      
-	      )
-	      ))pes)))
+		 (pe->lex-pe_rec y))))pes)))
 	      
 (define pe->lex-pe
           (lambda (pes)
@@ -2414,7 +2328,7 @@
       ((null? fvars) (reverse accum-lst))
       (else
        (let ((curr (car fvars)))
-       (if (Notmember? curr fvars-initss)
+       (if (not_member? curr fvars-initss)
          (fvars->table (cdr fvars)
                       (cons `(,addr ,curr) accum-lst)
                       (+ addr 1) fvars-initss)
